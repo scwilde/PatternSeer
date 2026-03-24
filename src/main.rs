@@ -3,6 +3,9 @@ use winit::event_loop::{ControlFlow, EventLoop};
 
 mod app;
 mod gpu_state;
+mod canvas;
+mod camera;
+mod utils;
 
 
 fn main() -> anyhow::Result<()> {
