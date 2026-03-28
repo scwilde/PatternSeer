@@ -1,26 +1,41 @@
+Before I figure out the application structure down there I'm going to move to egui and eframe
+
+
+======================================================================================================
+
+
 It looks like to do this right and not shoot ourselves in the foot we need to divide concerns
-a bit. We need this structure:
+a bit. We need this structure I think
 
-EventLoop
-    App
-        Renderer
-            GpuState
-            CanvasRenderer
-            GridRenderer
-        Canvas
-            CanvasTiles
-        Camera
-
-- Canvas
-    - This only stores data about the pattern and only has functions to retrieve or update that data
-    - Stored CanvasTiles will deal with the databases and returning data to the renderer
-- Camera
-    - Stores the position, zoom level, and viewport dimensions
-    - has functions to convert screenspace coords to world-space
-- Renderer
-    - Contains buffers for storing rendered geometry and providing it to shaders
-    - Contains cache to help prevent unnessesary re-generating or re-culling
-    - Contains functions for different rendering passes (wireframe, textured stitches, symbols, etc.)
+App
+    Renderer
+        RenderContext
+        CanvasRenderer
+        GridRenderer
+    Canvas
+        CanvasTiles
+    Camera
+App
+    - Contains the current app state and handles user input to the GUI
+    - Canvas
+        - This only stores data about the pattern and only has functions to retrieve or update that data
+        - Stored CanvasTiles will deal with the databases and returning data to the CanvasRenderer
+    - Camera
+        - Stores the position, zoom level, and viewport dimensions
+        - has functions to convert screenspace coords to world-space
+    - Renderer
+        - This handles the bulk of the actual rendering. To render the canvas as just color symbols, you would 
+        run something like Renderer.render_symbols(canvas, camera)
+        - RenderContext
+            - This would be the GpuContext for wgpu, or the rendering area provided by egui or anothe gui framework
+        - CanvasRenderer
+            - Used to render the visible canvas
+            - Contains buffers of generated geoemetry to send to the RenderContext shaders
+            - Contains a cache to prevent unnessesary re-generation of geometry
+        - GridRenderer
+            - used to render the visible canvas grid
+            - Contains buffers of generated geoemetry to send to the RenderContext shaders
+            - Contains a cache to prevent unnessesary re-generation of geometry
 
 Each frame we would call a render pass from Renderer
 

@@ -1,14 +1,14 @@
 use winit::window::Window;
 use std::sync::Arc;
 
-pub struct GpuState {
+pub struct GpuContext {
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration
 }
 
-impl GpuState {
+impl GpuContext {
     pub fn new(window: Arc<Window>) -> Self {
         pollster::block_on(Self::new_async(window))
     }
