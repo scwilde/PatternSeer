@@ -43,10 +43,15 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             },
             WindowEvent::Resized(size) => {
-                if let Some(gpu) = &mut self.gpu { gpu.resize(size) }
+                if let Some(gpu) = &mut self.gpu {
+                    gpu.resize(size);
+                }
             },
             WindowEvent::RedrawRequested => {
-                if let Some(gpu) = &mut self.gpu { gpu.render() }
+                println!("Frame");
+                if let Some(gpu) = &mut self.gpu {
+                    gpu.render();
+                }
             },
 
             WindowEvent::MouseInput { button, state, .. } => {
@@ -79,6 +84,9 @@ impl ApplicationHandler for App {
                 if let Some(camera) = &mut self.camera {
                     if camera.panning {
                         camera.pan(delta.0, delta.1);
+                        if let Some(window) = &mut self.window {
+                            window.request_redraw();
+                        }
                     }
                 }
             }

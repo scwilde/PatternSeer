@@ -1,0 +1,42 @@
+It looks like to do this right and not shoot ourselves in the foot we need to divide concerns
+a bit. We need this structure:
+
+EventLoop
+    App
+        Renderer
+            GpuState
+            CanvasRenderer
+            GridRenderer
+        Canvas
+            CanvasTiles
+        Camera
+
+- Canvas
+    - This only stores data about the pattern and only has functions to retrieve or update that data
+    - Stored CanvasTiles will deal with the databases and returning data to the renderer
+- Camera
+    - Stores the position, zoom level, and viewport dimensions
+    - has functions to convert screenspace coords to world-space
+- Renderer
+    - Contains buffers for storing rendered geometry and providing it to shaders
+    - Contains cache to help prevent unnessesary re-generating or re-culling
+    - Contains functions for different rendering passes (wireframe, textured stitches, symbols, etc.)
+
+Each frame we would call a render pass from Renderer
+
+
+then each frame we need to
+    - get all the grid lines in view
+        min_x = ceil(Camera.X - (Camera.Width / 2*Camera.Zoom))
+        max_x = floor(Camera.X - (Camera.Width / 2*Camera.Zoom))
+        min_y = ceil(Camera.Y - (Camera.Height / 2*Camera.Zoom))
+        max_y = floor(Camera.Y - (Camera.Height / 2*Camera.Zoom))
+    - convert their world-space coordinates to clip space
+    - generate a quad for each line in clip space
+    - send these quads into the render pipeline to be rendered
+
+
+also we need to create the render pipeline with the shaders
+
+
+

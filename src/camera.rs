@@ -14,7 +14,7 @@ impl Camera {
             y: 0.0,
             width: width,
             height: height,
-            zoom: 1,
+            zoom: 20,
             panning: false
         }
     }
@@ -22,6 +22,6 @@ impl Camera {
     pub fn pan(&mut self, delta_x: f64, delta_y: f64) {
         self.x += delta_x;
         self.y += delta_y;
-        println!("Moved {}, {} ({}, {})", delta_x, delta_y, self.x, self.y);
+        println!("Camera panned by [{}, {}]  to [{}, {}]", delta_x, delta_y, self.x, self.y);
     }
 }
