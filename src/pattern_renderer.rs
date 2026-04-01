@@ -17,7 +17,6 @@ impl PatternRenderer {
         const HELLO_SHADER: &str = include_str!("hello_shader.wgsl");
         let callback_resources = &mut wgpu_render_state.renderer.write().callback_resources;
         let gpu_device = wgpu_render_state.device.clone();
-        let gpu_queue = wgpu_render_state.queue.clone();
 
         let vertex_buffer = gpu_device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Test Buffer"),
@@ -116,15 +115,9 @@ impl egui_wgpu::CallbackTrait for PatternRendererCallback {
             callback_resources: &mut egui_wgpu::CallbackResources,
         ) -> Vec<wgpu::CommandBuffer> {
         if let Some(resources) = &mut callback_resources.get_mut::<PatternRendererResources>() {
-            resources.vertices.transform_with(|volatile| {
-                match volatile {
-                    Dirty(vertices) => {
-                        println!("Vertices dirty; Uploading to GPU...");
-                        queue.write_buffer(&resources.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
-                        Clean(vertices)
-                    },
-                    Clean(_) => { volatile }
-                }
+            resources.vertices.if_dirty_clean_with(|vertices| {
+                println!("Vertices dirty; Uploading to GPU...");
+                queue.write_buffer(&resources.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
             });
         }
 

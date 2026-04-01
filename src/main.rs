@@ -7,7 +7,8 @@ mod utils;
 
 
 struct PatternSeer {
-    hello_triangle: Volatile<Vec<utils::Vertex>>
+    triangles: Vec<Vec<utils::Vertex>>,
+    active_triangle: Volatile<usize>
 }
 
 impl PatternSeer {
@@ -16,11 +17,24 @@ impl PatternSeer {
         PatternRenderer::init(wgpu_render_state);
 
         PatternSeer {
-            hello_triangle: Dirty(vec![
-                utils::Vertex { position: [0.0, 0.5], color: [1.0, 0.0, 0.0] },
-                utils::Vertex { position: [-0.5, -0.5], color: [0.0, 1.0, 0.0] },
-                utils::Vertex { position: [0.5, -0.5], color: [0.0, 0.0, 1.0] }
-            ])
+            triangles: vec![
+                vec![
+                    utils::Vertex { position: [0.0, 0.5], color: [1.0, 0.0, 0.0] },
+                    utils::Vertex { position: [-0.5, -0.5], color: [0.0, 1.0, 0.0] },
+                    utils::Vertex { position: [0.5, -0.5], color: [0.0, 0.0, 1.0] }
+                ],
+                vec![
+                    utils::Vertex { position: [0.0, 0.5], color: [0.0, 1.0, 0.0] },
+                    utils::Vertex { position: [-0.5, -0.5], color: [0.0, 0.0, 1.0] },
+                    utils::Vertex { position: [0.5, -0.5], color: [1.0, 0.0, 0.0] }
+                ],
+                vec![
+                    utils::Vertex { position: [0.0, 0.5], color: [0.0, 0.0, 1.0] },
+                    utils::Vertex { position: [-0.5, -0.5], color: [1.0, 0.0, 0.0] },
+                    utils::Vertex { position: [0.5, -0.5], color: [0.0, 1.0, 0.0] }
+                ],
+            ],
+            active_triangle: Dirty(0)
         }
     }
 }
@@ -29,19 +43,32 @@ impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
         egui::CentralPanel::default().show(ui, |ui| {
             println!("New frame");
-            let desired_size = egui::vec2(200.0, 100.0);
-            let (rect, _response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
 
-            self.hello_triangle.transform_with(|volatile| {
-                match volatile {
-                    Dirty(hello_triangle) => {
-                        println!("Triangle dirty; Rerendering...");
-                        PatternRenderer::update(&hello_triangle, frame);
-                        Clean(hello_triangle)
-                    }
-                    Clean(_) => { volatile }
+            if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                let mut active_idx = self.active_triangle.inner().clone() + 1;
+                if active_idx >= self.triangles.len() {
+                    active_idx = 0;
                 }
+                self.active_triangle = Dirty(active_idx);
+            }
+            if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                let mut active_idx = self.active_triangle.inner().clone();
+                if active_idx > 0 {
+                    active_idx -= 1;
+                } else {
+                    active_idx = self.triangles.len() - 1;
+                }
+                self.active_triangle = Dirty(active_idx);
+            }
+
+
+            let (rect, _response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::hover());
+
+            self.active_triangle.if_dirty_clean_with(|active_index| {
+                println!("Triangle dirty; Rerendering...");
+                PatternRenderer::update(&self.triangles[*active_index], frame);
             });
+
             let render_callback = PatternRenderer::render();
             let callback_shape = egui_wgpu::Callback::new_paint_callback(rect, render_callback);
 

@@ -1,30 +1,12 @@
-current app structure:
-PatternSeer
-| PatternRenderer <implements CallbackTrait>
-| | paint, prepare
-| hello_triangle
-
-this structure means that hello_triangle is only accesible to the PatternRenderer on creation.
-if hello_triangle was ever updated later, the data would be inaccesible
-
-
-Wait no hold on, if we provide the PatternRenderer with an update function that can pass in the
-new hello_triangle that can be called each frame in the PatternSeer.ui() function
-
-
-hmmm no actually we don't want to do that. we don't want to store any data inside PatternRenderer.
-Plus, then we would have two copies of data that we would have to keep in sync
-
-What about this app structure:
-
-PatternSeer
-| PatternRenderer
-| | new(wgpu_render_state)
-| | render_hello_triangle(vertices, frame) -> PatternRendererCallback
-| vertices
-
-then each frame in ui() we call PatternRenderer.render_hello_triangle() to get a new RendererCallback. 
-
+-[X] Play with shader
+-[X] Test rendering changes when Volatile type changed to Dirty
+-[X] Expand out canvas to fill the main screen
+-[] Create camera with world space coords that can pan
+    This camera will be stored in PatternSeer
+-[] Bind triangle to world space coords and render camera panning
+    Pass triangle and camera into PatternRenderer
+    Convert triangle worldspace positions into clip space positions and store in buffer
+-[] change triangle to gridlines
 
 then each frame we need to
     - get all the grid lines in view

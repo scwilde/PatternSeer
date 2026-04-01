@@ -22,13 +22,15 @@ impl<T> Volatile<T> {
     }
 }
 impl<T: Default> Volatile<T> {
-    pub fn transform_with<F>(&mut self, func: F)
-    where 
-        F: FnOnce(Self) -> Self 
+    // TODO Might be a better function name
+    pub fn if_dirty_clean_with<F>(&mut self, func: F)
+    where
+        F: FnOnce(&T)
     {
-        // ! I really dont like this API
-        let taken = std::mem::take(self);
-        *self = func(taken);
+        if let Self::Dirty(data) = self {
+            func(data);
+            *self = Self::Clean(std::mem::take(data));
+        }
     }
 }
 impl<T: Default> Default for Volatile<T> 
