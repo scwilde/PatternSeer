@@ -1,21 +1,19 @@
 pub struct Camera {
-    pub x: f32,
-    pub y: f32,
-    pub zoom: i32,
+    /// Camera position in world space
+    pub position: [f32; 2],
+    pub viewport: [f32; 2],
+    /// How many pixels between each single world space unit
+    pub zoom: f32,
 }
 
 impl Camera {
-    pub fn new() -> Self {
-        Self {
-            x: 0.0,
-            y: 0.0,
-            zoom: 20,
-        }
+    pub fn pan(&mut self, delta_x: f32, delta_y: f32) {
+        self.position[0] -= delta_x / self.zoom;
+        self.position[1] += delta_y / self.zoom;
     }
 
-    pub fn pan(&mut self, delta_x: f32, delta_y: f32) {
-        self.x -= delta_x;
-        self.y -= delta_y;
-        println!("Camera panned by [{}, {}]  to [{}, {}]", delta_x, delta_y, self.x, self.y);
+    pub fn zoom(&mut self, delta_z: f32) {
+        let zoom_sensitivity = 0.01;
+        self.zoom += self.zoom * delta_z * zoom_sensitivity;
     }
 }

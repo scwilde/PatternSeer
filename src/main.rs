@@ -1,6 +1,7 @@
 use eframe::{egui, egui_wgpu};
 use crate::camera::Camera;
 use crate::pattern_renderer::PatternRenderer;
+use crate::utils::Triangle;
 use crate::utils::Volatile::{self, *};
 
 mod pattern_renderer;
@@ -9,8 +10,7 @@ mod camera;
 
 
 struct PatternSeer {
-    triangles: Vec<Vec<utils::Vertex>>,
-    active_triangle: Volatile<usize>,
+    triangle: utils::Triangle,
     camera: Camera,
 }
 
@@ -20,43 +20,17 @@ impl PatternSeer {
         PatternRenderer::init(wgpu_render_state);
 
         PatternSeer {
-            triangles: vec![
-                vec![
-                    utils::Vertex { position: [0.0, 0.5], color: [1.0, 0.0, 0.0] },
-                    utils::Vertex { position: [-0.5, -0.5], color: [0.0, 1.0, 0.0] },
-                    utils::Vertex { position: [0.5, -0.5], color: [0.0, 0.0, 1.0] }
-                ],
-                vec![
-                    utils::Vertex { position: [0.0, 0.5], color: [0.0, 1.0, 0.0] },
-                    utils::Vertex { position: [-0.5, -0.5], color: [0.0, 0.0, 1.0] },
-                    utils::Vertex { position: [0.5, -0.5], color: [1.0, 0.0, 0.0] }
-                ],
-                vec![
-                    utils::Vertex { position: [0.0, 0.5], color: [0.0, 0.0, 1.0] },
-                    utils::Vertex { position: [-0.5, -0.5], color: [1.0, 0.0, 0.0] },
-                    utils::Vertex { position: [0.5, -0.5], color: [0.0, 1.0, 0.0] }
-                ],
-            ],
-            active_triangle: Dirty(0),
-            camera: Camera::new(),
+            triangle: Triangle{vertices: [
+                utils::Vertex { position: [0.0, 0.5], color: [1.0, 0.0, 0.0] },
+                utils::Vertex { position: [-1.0, -0.5], color: [0.0, 1.0, 0.0] },
+                utils::Vertex { position: [1.0, -0.5], color: [0.0, 0.0, 1.0] },
+            ]},
+            camera: Camera {
+                position: [0.0, 0.0],
+                viewport: [0.0, 0.0],
+                zoom: 20.0,
+            },
         }
-    }
-
-    pub fn rotate_right(&mut self) {
-        let mut active_idx = self.active_triangle.inner().clone() + 1;
-        if active_idx >= self.triangles.len() {
-            active_idx = 0;
-        }
-        self.active_triangle = Dirty(active_idx);
-    }
-    pub fn rotate_left(&mut self) {
-        let mut active_idx = self.active_triangle.inner().clone();
-        if active_idx > 0 {
-            active_idx -= 1;
-        } else {
-            active_idx = self.triangles.len() - 1;
-        }
-        self.active_triangle = Dirty(active_idx);
     }
 }
 
@@ -65,23 +39,21 @@ impl eframe::App for PatternSeer {
         egui::CentralPanel::default().show(ui, |ui| {
             // println!("New frame");
 
-            if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) { self.rotate_right() }
-            if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) { self.rotate_left() }
-
-
-
+            if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) { self.triangle.rotate_left() }
+            if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) { self.triangle.rotate_right() }
 
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
-            if canvas_response.dragged() {
-                self.camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y);
+            self.camera.viewport = [canvas_rect.width(), canvas_rect.height()];
+
+            if canvas_response.dragged_by(egui::PointerButton::Secondary) {
+                self.camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y)
+            }
+            if canvas_response.hovered() { 
+                let scroll_delta = ui.input(|i| i.smooth_scroll_delta);
+                self.camera.zoom(scroll_delta.y);
             }
 
-            self.active_triangle.if_dirty_clean_with(|active_index| {
-                println!("Triangle dirty; Rerendering...");
-                PatternRenderer::update(&self.triangles[*active_index], frame);
-            });
-
-            let render_callback = PatternRenderer::render();
+            let render_callback = PatternRenderer::render(&self.triangle, &self.camera, frame);
             let callback_shape = egui_wgpu::Callback::new_paint_callback(canvas_rect, render_callback);
 
             ui.painter().add(callback_shape);
