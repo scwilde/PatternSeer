@@ -3,6 +3,7 @@ use crate::{camera::Camera, utils::{self, Vertex, Volatile::{self, *}}};
 use std::borrow::Cow;
 
 struct PatternRendererResources {
+    ///
     vertex_buffer: wgpu::Buffer,
     vertex_buffer_len: u64,
     render_pipeline: wgpu::RenderPipeline,
@@ -91,7 +92,7 @@ impl PatternRenderer {
     }
 
     // TODO Split the grid and pattern into seperate render calls
-    
+
     pub fn render(triangle: &utils::Triangle, camera: &Camera, frame: &mut eframe::Frame) -> PatternRendererCallback {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()

@@ -1,6 +1,7 @@
 pub struct Camera {
     /// Camera position in world space
     pub position: [f32; 2],
+    /// Camera dimensions in logical pixels
     pub viewport: [f32; 2],
     /// How many pixels between each single world space unit
     pub zoom: f32,

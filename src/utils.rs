@@ -12,19 +12,6 @@ pub struct Vertex {
 pub struct Triangle {
     pub vertices: [Vertex; 3]
 }
-impl Triangle {
-    pub fn rotate_left(&mut self) {
-        for mut vert in self.vertices {
-            vert.color.rotate_left(1);
-        }
-    }
-    pub fn rotate_right(&mut self) {
-        for mut vert in self.vertices {
-            vert.color.rotate_right(1);
-        }
-    }
-}
-
 
 
 pub enum Volatile<T> {

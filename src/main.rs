@@ -37,11 +37,6 @@ impl PatternSeer {
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
         egui::CentralPanel::default().show(ui, |ui| {
-            // println!("New frame");
-
-            if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) { self.triangle.rotate_left() }
-            if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) { self.triangle.rotate_right() }
-
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
             self.camera.viewport = [canvas_rect.width(), canvas_rect.height()];
 
