@@ -1,7 +1,7 @@
 -[X] Play with shader
 -[X] Test rendering changes when Volatile type changed to Dirty
 -[X] Expand out canvas to fill the main screen
--[] Create camera with world space coords that can pan
+-[X] Create camera with world space coords that can pan
     This camera will be stored in PatternSeer
 -[] Bind triangle to world space coords and render camera panning
     Pass triangle and camera into PatternRenderer
