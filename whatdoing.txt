@@ -1,43 +1,29 @@
-Before I figure out the application structure down there I'm going to move to egui and eframe
+current app structure:
+PatternSeer
+| PatternRenderer <implements CallbackTrait>
+| | paint, prepare
+| hello_triangle
+
+this structure means that hello_triangle is only accesible to the PatternRenderer on creation.
+if hello_triangle was ever updated later, the data would be inaccesible
 
 
-======================================================================================================
+Wait no hold on, if we provide the PatternRenderer with an update function that can pass in the
+new hello_triangle that can be called each frame in the PatternSeer.ui() function
 
 
-It looks like to do this right and not shoot ourselves in the foot we need to divide concerns
-a bit. We need this structure I think
+hmmm no actually we don't want to do that. we don't want to store any data inside PatternRenderer.
+Plus, then we would have two copies of data that we would have to keep in sync
 
-App
-    Renderer
-        RenderContext
-        CanvasRenderer
-        GridRenderer
-    Canvas
-        CanvasTiles
-    Camera
-App
-    - Contains the current app state and handles user input to the GUI
-    - Canvas
-        - This only stores data about the pattern and only has functions to retrieve or update that data
-        - Stored CanvasTiles will deal with the databases and returning data to the CanvasRenderer
-    - Camera
-        - Stores the position, zoom level, and viewport dimensions
-        - has functions to convert screenspace coords to world-space
-    - Renderer
-        - This handles the bulk of the actual rendering. To render the canvas as just color symbols, you would 
-        run something like Renderer.render_symbols(canvas, camera)
-        - RenderContext
-            - This would be the GpuContext for wgpu, or the rendering area provided by egui or anothe gui framework
-        - CanvasRenderer
-            - Used to render the visible canvas
-            - Contains buffers of generated geoemetry to send to the RenderContext shaders
-            - Contains a cache to prevent unnessesary re-generation of geometry
-        - GridRenderer
-            - used to render the visible canvas grid
-            - Contains buffers of generated geoemetry to send to the RenderContext shaders
-            - Contains a cache to prevent unnessesary re-generation of geometry
+What about this app structure:
 
-Each frame we would call a render pass from Renderer
+PatternSeer
+| PatternRenderer
+| | new(wgpu_render_state)
+| | render_hello_triangle(vertices, frame) -> PatternRendererCallback
+| vertices
+
+then each frame in ui() we call PatternRenderer.render_hello_triangle() to get a new RendererCallback. 
 
 
 then each frame we need to
