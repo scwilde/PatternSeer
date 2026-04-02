@@ -27,13 +27,12 @@ impl PatternSeer {
     fn new(cc: &eframe::CreationContext) -> Self {
         PatternRenderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
+        let pattern = Pattern { stitched_dimensions: [20, 20] };
+        let camera = Camera::new(&pattern);
+
         PatternSeer {
-            camera: Dirty(Camera {
-                position: [0.0, 0.0],
-                viewport: [0.0, 0.0],
-                zoom: 20.0,
-            }),
-            pattern: Pattern { stitched_dimensions: [200, 200] },
+            camera: Dirty(camera),
+            pattern,
         }
     }
 }
@@ -45,7 +44,7 @@ impl eframe::App for PatternSeer {
             // Create our rendering canvas filling all available space
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
             if self.camera.inner().viewport != [canvas_rect.width(), canvas_rect.height()] {
-                self.camera.dirty_with(|camera| camera.viewport = [canvas_rect.width(), canvas_rect.height()]);
+                self.camera.dirty_with(|camera| camera.resize(canvas_rect.width(), canvas_rect.height(), &self.pattern));
             }
 
             // Camera pan and zoom controls
@@ -60,6 +59,8 @@ impl eframe::App for PatternSeer {
                     self.camera.dirty_with(|camera| camera.zoom(scroll_delta.y));
                 }
             }
+            self.camera.inner_mut().limit_pan(&self.pattern);
+            self.camera.inner_mut().limit_zoom(&self.pattern);
 
             // Render the canvas
             self.camera.if_dirty_clean_with(|camera| {
