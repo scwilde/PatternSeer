@@ -1,20 +1,48 @@
--[X] Play with shader
--[X] Test rendering changes when Volatile type changed to Dirty
--[X] Expand out canvas to fill the main screen
--[X] Create camera with world space coords that can pan
-    This camera will be stored in PatternSeer
--[X] Bind triangle to world space coords and render camera panning
-    Pass triangle and camera into PatternRenderer
-    Convert triangle worldspace positions into clip space positions and store in buffer
--[] Document everything
--[] change triangle to gridlines
+-[X] change triangle to gridlines
+    - [X] when camera moves, mark it as dirty
+    - [X] Send canvas to Renderer
+    - [X] only do all this if the camera is dirty
+        - [X] Gridline culling. Renderer generates gridline limits within view as an iterator.
+            these are world-space gridline positions
+                min_x = ceil(Camera.X - (Camera.Width / 2*Camera.Zoom)) | clamped to 0
+                max_x = floor(Camera.X - (Camera.Width / 2*Camera.Zoom)) | clamped to canvas.width
+                min_y = ceil(Camera.Y - (Camera.Height / 2*Camera.Zoom)) | clamped to 0
+                max_y = floor(Camera.Y - (Camera.Height / 2*Camera.Zoom)) | clamped to canvas.height
+        - [X] next we iterate over each grid line
+            - [X] get gridline's x or y position in space
+            - [X] generate an `offset` value. 1x grids have an offset of 1px, 10x have an offset of 2px,
+                gridlines 0 and canvas width/height have an offset of 3.
+            - [X] for x gridlines produce the vertices
+                (precalculate x-offset/2 and x+offset/2)
+                [
+                    [x-offset/2, -1],
+                    [x+offset/2, -1],
+                    [x-offset/2, 1],
+                    [x+offset/2, -1],
+                    [x+offset/2, 1],
+                    [x-offset/2, 1],
+                ]
+            - [X] and for y produce these vertices
+                (precalculate y-offset/2 and y+offset/2)
+                [
+                    [-1, y+offset/2],
+                    [1, y+offset/2],
+                    [1, y-offset/2],
+                    [-1, y+offset/2],
+                    [1, y-offset/2],
+                    [-1, y-offset/2],
+                ]
+            - [X] Collapse all these vertices into a vec and save into `callback_resources`; mark vertices dirty
+        - [X] In the prepare stage, if the vertices are dirty upload them to the gpu
+
+- [] change line's width if it is a multiple of 10
+- [] cull any squares that are smaller than 4 px
+- [] shift the line width levels down when this culling happens
+
 
 then each frame we need to
     - get all the grid lines in view
-        min_x = ceil(Camera.X - (Camera.Width / 2*Camera.Zoom))
-        max_x = floor(Camera.X - (Camera.Width / 2*Camera.Zoom))
-        min_y = ceil(Camera.Y - (Camera.Height / 2*Camera.Zoom))
-        max_y = floor(Camera.Y - (Camera.Height / 2*Camera.Zoom))
+        
     - convert their world-space coordinates to clip space
     - generate a quad for each line in clip space
     - send these quads into the render pipeline to be rendered

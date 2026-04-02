@@ -21,6 +21,12 @@ pub struct Triangle {
 }
 
 
+pub enum Axis {
+    X,
+    Y,
+}
+
+
 /// Denotes a value that is processed somewhere else and should only be reprocessed if it has changed.
 /// In particular its useful for values that would be expensive to repeatedly `PartialEq` or `Clone`.
 /// 
@@ -60,19 +66,25 @@ impl<T: Default> Volatile<T> {
         F: FnOnce(&T)
     {
         if let Self::Dirty(data) = self {
-            func(data);
+            func(&data);
             *self = Self::Clean(std::mem::take(data));
         }
     }
     /// Once the closure finishes the variant is hot-swapped from to `Dirty`, regardless of the starting variant.
     /// Preserves internal value.
-    pub fn make_dirty_with<F>(&mut self, func: F)
+    pub fn dirty_with<F>(&mut self, func: F)
     where
-        F: FnOnce(&T)
+        F: FnOnce(&mut T)
     {
         let data = self.inner_mut();
         func(data);
         *self = Self::Dirty(std::mem::take(data));
+    }
+
+    pub fn to_clean(&mut self) {
+        if let Self::Dirty(data) = self {
+            *self = Self::Clean(std::mem::take(data));
+        }
     }
 }
 impl<T: Default> Default for Volatile<T> 

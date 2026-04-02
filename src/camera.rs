@@ -1,4 +1,5 @@
 /// A camera object for panning and zooming.
+#[derive(Default, Debug)]
 pub struct Camera {
     // TODO Replace with a Vec2 from a crate, prob numix
     /// Camera position in world space.

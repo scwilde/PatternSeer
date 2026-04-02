@@ -1,18 +1,21 @@
 use eframe::{egui, egui_wgpu};
 use crate::camera::Camera;
+use crate::pattern::Pattern;
 use crate::pattern_renderer::PatternRenderer;
-use crate::utils::Triangle;
+use crate::utils::Volatile::{self, *};
+
 
 mod pattern_renderer;
 mod utils;
 mod camera;
+mod pattern;
 
 /// An instance of the application.
 struct PatternSeer {
-    /// The triangle that we are currently rendering.
-    triangle: utils::Triangle,
     /// The camera used for rendering.
-    camera: Camera,
+    camera: Volatile<Camera>,
+    /// Container for the pattern we are currently working on.
+    pattern: Pattern,
 }
 
 impl PatternSeer {
@@ -25,16 +28,12 @@ impl PatternSeer {
         PatternRenderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
         PatternSeer {
-            triangle: Triangle{vertices: [
-                utils::Vertex { position: [0.0, 0.5], color: [1.0, 0.0, 0.0] },
-                utils::Vertex { position: [-1.0, -0.5], color: [0.0, 1.0, 0.0] },
-                utils::Vertex { position: [1.0, -0.5], color: [0.0, 0.0, 1.0] },
-            ]},
-            camera: Camera {
+            camera: Dirty(Camera {
                 position: [0.0, 0.0],
                 viewport: [0.0, 0.0],
                 zoom: 20.0,
-            },
+            }),
+            pattern: Pattern { stitched_dimensions: [10_000, 10_000] },
         }
     }
 }
@@ -45,19 +44,30 @@ impl eframe::App for PatternSeer {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             // Create our rendering canvas filling all available space
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
-            self.camera.viewport = [canvas_rect.width(), canvas_rect.height()];
+            if self.camera.inner().viewport != [canvas_rect.width(), canvas_rect.height()] {
+                self.camera.dirty_with(|camera| camera.viewport = [canvas_rect.width(), canvas_rect.height()]);
+            }
 
             // Camera pan and zoom controls
             if canvas_response.dragged_by(egui::PointerButton::Secondary) {
-                self.camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y)
+                self.camera.dirty_with(|camera| {
+                    camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y)
+                });
             }
             if canvas_response.hovered() { 
                 let scroll_delta = ui.input(|i| i.smooth_scroll_delta);
-                self.camera.zoom(scroll_delta.y);
+                if scroll_delta.y != 0.0 {
+                    self.camera.dirty_with(|camera| camera.zoom(scroll_delta.y));
+                }
             }
 
             // Render the canvas
-            let render_callback = PatternRenderer::render(&self.triangle, &self.camera, frame);
+            self.camera.if_dirty_clean_with(|camera| {
+                println!("Camera dirty, rerendering...");
+                PatternRenderer::generate_grid(&self.pattern, camera, frame);
+            });
+            let render_callback = PatternRenderer::render();
+
             let callback_shape = egui_wgpu::Callback::new_paint_callback(canvas_rect, render_callback);
             ui.painter().add(callback_shape);
         });
