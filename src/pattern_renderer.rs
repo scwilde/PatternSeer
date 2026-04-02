@@ -2,19 +2,30 @@ use eframe::{egui, egui_wgpu::{self, wgpu}};
 use crate::{camera::Camera, utils::{self, Vertex, Volatile::{self, *}}};
 use std::borrow::Cow;
 
+
+/// Used for the storage of resources between render stages.
 struct PatternRendererResources {
-    ///
+    /// Reference to the vertex buffer we set up for rendering.
     vertex_buffer: wgpu::Buffer,
+    /// Length of the vertex buffer in vertices.
     vertex_buffer_len: u64,
+    /// Our configured render pipeline with our shaders and such.
     render_pipeline: wgpu::RenderPipeline,
 
+    /// The list of vertices to be submitted to the buffer before drawing.
     vertices: Vec<utils::Vertex>,
 }
 
 
+/// Handles all of the heavy rendering tasks or delegates them to GPU.
 pub struct PatternRenderer { }
 
 impl PatternRenderer {
+    /// Initializes the stored `PatternRendererResources` thats accessible to other render stages from `callback_resources`.
+    /// 
+    /// # Parameters
+    /// 
+    /// * `wgpu_render_state` - The WGPU context that contains the `callback_resources` we will insert into.
     pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
         const HELLO_SHADER: &str = include_str!("hello_shader.wgsl");
         let callback_resources = &mut wgpu_render_state.renderer.write().callback_resources;
@@ -22,14 +33,15 @@ impl PatternRenderer {
 
         let vertex_buffer = gpu_device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Test Buffer"),
-            size: (size_of::<utils::Vertex>() * 3 * 10) as u64,
+            size: (size_of::<utils::Vertex>() * 3 * 10) as u64,                 // TODO Magic numbers
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false
         });
         let vertex_buffer_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<utils::Vertex>() as u64,
-            step_mode: wgpu::VertexStepMode::Vertex,                    // ? Whats this for?
+            step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
+                // TODO More magic numbers
                 wgpu::VertexAttribute {
                     offset: 0,
                     shader_location: 0,
@@ -91,8 +103,18 @@ impl PatternRenderer {
         });
     }
 
-    // TODO Split the grid and pattern into seperate render calls
-
+    /// Renders the given triangle and camera into vertex data to be drawn on screen.
+    /// 
+    /// # Parameters
+    /// 
+    /// * `triangle` - The triangle that needs to be rendered.
+    /// * `camera` - The camera rendering our scene.
+    /// * `frame` - Information about the current egui frame. We use it to get access to `callback_resources`
+    /// where we store our rendered geometry
+    /// 
+    /// # Returns
+    /// 
+    /// An instance of `PatternRendererCallback` which egui then uses to paint what we rendered
     pub fn render(triangle: &utils::Triangle, camera: &Camera, frame: &mut eframe::Frame) -> PatternRendererCallback {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()
@@ -109,13 +131,14 @@ impl PatternRenderer {
                 }
                 resources.vertices = vertices;
 
-                return PatternRendererCallback {  };
+                PatternRendererCallback {  }
         } else {
             panic!("PatternRenderer not initialized!");
         }
     }
 }
 
+/// Callback struct used by egui to draw our rendered scene into a panel.
 #[derive(Clone, Copy)]
 pub struct PatternRendererCallback { }
 

@@ -2,22 +2,27 @@ use eframe::{egui, egui_wgpu};
 use crate::camera::Camera;
 use crate::pattern_renderer::PatternRenderer;
 use crate::utils::Triangle;
-use crate::utils::Volatile::{self, *};
 
 mod pattern_renderer;
 mod utils;
 mod camera;
 
-
+/// An instance of the application.
 struct PatternSeer {
+    /// The triangle that we are currently rendering.
     triangle: utils::Triangle,
+    /// The camera used for rendering.
     camera: Camera,
 }
 
 impl PatternSeer {
+    /// Creates a new instance of PatternSeer.
+    /// 
+    /// # Parameters
+    /// 
+    /// * 'cc' - `CreationContext` provided by something like `eframe::run_native()`.
     fn new(cc: &eframe::CreationContext) -> Self {
-        let wgpu_render_state = cc.wgpu_render_state.as_ref().unwrap();
-        PatternRenderer::init(wgpu_render_state);
+        PatternRenderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
         PatternSeer {
             triangle: Triangle{vertices: [
@@ -36,10 +41,13 @@ impl PatternSeer {
 
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
-        egui::CentralPanel::default().show(ui, |ui| {
+        // Central UI pannel
+        egui::CentralPanel::default().show_inside(ui, |ui| {
+            // Create our rendering canvas filling all available space
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
             self.camera.viewport = [canvas_rect.width(), canvas_rect.height()];
 
+            // Camera pan and zoom controls
             if canvas_response.dragged_by(egui::PointerButton::Secondary) {
                 self.camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y)
             }
@@ -48,9 +56,9 @@ impl eframe::App for PatternSeer {
                 self.camera.zoom(scroll_delta.y);
             }
 
+            // Render the canvas
             let render_callback = PatternRenderer::render(&self.triangle, &self.camera, frame);
             let callback_shape = egui_wgpu::Callback::new_paint_callback(canvas_rect, render_callback);
-
             ui.painter().add(callback_shape);
         });
     }

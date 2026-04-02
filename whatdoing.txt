@@ -3,9 +3,10 @@
 -[X] Expand out canvas to fill the main screen
 -[X] Create camera with world space coords that can pan
     This camera will be stored in PatternSeer
--[] Bind triangle to world space coords and render camera panning
+-[X] Bind triangle to world space coords and render camera panning
     Pass triangle and camera into PatternRenderer
     Convert triangle worldspace positions into clip space positions and store in buffer
+-[] Document everything
 -[] change triangle to gridlines
 
 then each frame we need to
