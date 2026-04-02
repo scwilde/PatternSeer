@@ -33,7 +33,7 @@ impl PatternSeer {
                 viewport: [0.0, 0.0],
                 zoom: 20.0,
             }),
-            pattern: Pattern { stitched_dimensions: [10_000, 10_000] },
+            pattern: Pattern { stitched_dimensions: [200, 200] },
         }
     }
 }
@@ -63,10 +63,10 @@ impl eframe::App for PatternSeer {
 
             // Render the canvas
             self.camera.if_dirty_clean_with(|camera| {
-                println!("Camera dirty, rerendering...");
-                PatternRenderer::generate_grid(&self.pattern, camera, frame);
+                PatternRenderer::clear_with_color([1.0, 1.0, 1.0], frame);
+                PatternRenderer::render_grid(&self.pattern, camera, frame);
             });
-            let render_callback = PatternRenderer::render();
+            let render_callback = PatternRenderer::get_render();
 
             let callback_shape = egui_wgpu::Callback::new_paint_callback(canvas_rect, render_callback);
             ui.painter().add(callback_shape);

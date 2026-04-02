@@ -34,8 +34,11 @@
                 ]
             - [X] Collapse all these vertices into a vec and save into `callback_resources`; mark vertices dirty
         - [X] In the prepare stage, if the vertices are dirty upload them to the gpu
-
-- [] change line's width if it is a multiple of 10
+- [X] Set grid lines to be bound by pattern edges
+- [X] Change grid to be black on white
+- [] Stop the user from wandering too far from the canvas
+- [] Stop the user from zooming too far in or out
+- [X] change line's width if it is a multiple of 10
 - [] cull any squares that are smaller than 4 px
 - [] shift the line width levels down when this culling happens
 

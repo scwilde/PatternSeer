@@ -3,6 +3,117 @@ use crate::{camera::Camera, pattern::Pattern, utils::{self, Vertex, Volatile::{s
 use std::borrow::Cow;
 
 
+struct Gridline {
+    position: f32,
+    draw_min: f32,
+    draw_max: f32,
+    weight: f32,
+    axis: utils::Axis,
+}
+impl Gridline {
+    fn draw(&self, camera: &Camera) -> [utils::Vertex; 6] {
+        match self.axis {
+            utils::Axis::X => {
+                let x_clip = ((self.position - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
+                let draw_min_clip = ((self.draw_min - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
+                let draw_max_clip = ((self.draw_max - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
+                let weight = self.weight / (camera.viewport[0] / 2.0);
+                let corner_fix = (self.weight / 4.0) / (camera.viewport[1] / 2.0);
+
+                [
+                    // Top right
+                    utils::Vertex{position: [x_clip - weight / 2.0, draw_max_clip + corner_fix], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [x_clip + weight / 2.0, draw_max_clip + corner_fix], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [x_clip + weight / 2.0, draw_min_clip - corner_fix], color: [0.0, 0.0, 0.0]},
+                    //Bottom left
+                    utils::Vertex{position: [x_clip - weight / 2.0, draw_max_clip + corner_fix], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [x_clip + weight / 2.0, draw_min_clip - corner_fix], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [x_clip - weight / 2.0, draw_min_clip - corner_fix], color: [0.0, 0.0, 0.0]},
+                ]
+            },
+            utils::Axis::Y => {
+                let y_clip = ((self.position - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
+                let draw_min_clip = ((self.draw_min - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
+                let draw_max_clip = ((self.draw_max - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
+                let weight = self.weight / (camera.viewport[1] / 2.0);
+                let corner_fix = (self.weight / 4.0) / (camera.viewport[1] / 2.0);
+
+                [
+                    // Top right
+                    utils::Vertex{position: [draw_min_clip - corner_fix, y_clip + weight / 2.0], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [draw_max_clip + corner_fix, y_clip + weight / 2.0], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [draw_max_clip + corner_fix, y_clip - weight / 2.0], color: [0.0, 0.0, 0.0]},
+                    //Bottom left
+                    utils::Vertex{position: [draw_min_clip - corner_fix, y_clip + weight / 2.0], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [draw_max_clip + corner_fix, y_clip - weight / 2.0], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{position: [draw_min_clip - corner_fix, y_clip - weight / 2.0], color: [0.0, 0.0, 0.0]},
+                ]
+            }
+        }
+    }
+}
+
+struct GridlineIter {
+    working_min: f32,
+    working_max: f32,
+    grid_min: f32,
+    grid_max: f32,
+    draw_min: f32,
+    draw_max: f32,
+    curr: f32,
+    axis: utils::Axis,
+}
+impl GridlineIter {
+    fn new(
+            render_min: f32,
+            render_max: f32,
+            grid_min: f32,
+            grid_max: f32,
+            draw_min: f32,
+            draw_max: f32,
+            axis: utils::Axis
+        ) -> Self {
+        Self {
+            working_min: render_min.max(grid_min),
+            working_max: render_max.min(grid_max),
+            grid_min,
+            grid_max,
+            draw_min,
+            draw_max,
+            curr: render_min.max(grid_min),
+            axis
+        }
+    }
+}
+impl Iterator for GridlineIter {
+    type Item = Gridline;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let position = self.curr;
+        self.curr += 1.0;
+
+        let weight = match position {
+            p if p == self.grid_min || p == self.grid_max => 5.0,
+            p if p % 10.0 == 0.0 => 3.0,
+            _ => 1.0,
+        };
+
+        if position > self.working_max {
+            return None;
+        } else {
+            return Some(Gridline {
+                position,
+                draw_min: self.draw_min,
+                draw_max: self.draw_max,
+                weight,
+                axis: self.axis,
+            });
+        }
+
+    }
+}
+
+
 /// Used for the storage of resources between render stages.
 struct PatternRendererResources {
     /// Reference to the vertex buffer we set up for rendering.
@@ -53,7 +164,7 @@ impl PatternRenderer {
                     offset: std::mem::size_of::<[f32; 2]>() as u64,
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x3,
-                }
+                },
             ]
         };
 
@@ -105,6 +216,23 @@ impl PatternRenderer {
         });
     }
 
+    pub fn clear_with_color(color: [f32; 3], frame: &mut eframe::Frame) {
+        if let Some(resources) = frame.wgpu_render_state().unwrap()
+            .renderer.write()
+            .callback_resources.get_mut::<PatternRendererResources>() {
+                resources.vertices = Dirty(vec![
+                    Vertex { position: [-1.0, 1.0], color },
+                    Vertex { position: [1.0, 1.0], color },
+                    Vertex { position: [1.0, -1.0], color },
+                    Vertex { position: [-1.0, 1.0], color },
+                    Vertex { position: [1.0, -1.0], color },
+                    Vertex { position: [-1.0, -1.0], color },
+                ]);
+        } else {
+            panic!("PatternRenderer not initialized!");
+        }
+    }
+
     /// Generates the pattern's grid and provides it to `callback_resources`
     /// 
     /// # Parameters
@@ -112,70 +240,46 @@ impl PatternRenderer {
     /// * `pattern` - The pattern whos dimensions are used to generate the grid.
     /// * `camera` - The camera rendering our pattern.
     /// * `frame` - Information about the current egui frame. We use it to get access to `callback_resources`.
-    pub fn generate_grid(pattern: &Pattern, camera: &Camera, frame: &mut eframe::Frame) {
+    pub fn render_grid(pattern: &Pattern, camera: &Camera, frame: &mut eframe::Frame) {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()
             .callback_resources.get_mut::<PatternRendererResources>() {
-                // let mut vertices = vec![];
-                // for vert in triangle.vertices {
-                //     let x = ((vert.position[0] - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
-                //     let y = ((vert.position[1] - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
-
-                //     vertices.push(utils::Vertex {position: [x, y], color: vert.color});
-                // }
-                // resources.vertices = Dirty(vertices);
 
                 // Calculate min and max grid positions
-                let x_min = (camera.position[0] - (camera.viewport[0] / (2.0 * camera.zoom)))
-                    .ceil().max(0.0);
-                let x_max = (camera.position[0] + (camera.viewport[0] / (2.0 * camera.zoom)))
-                    .floor().min(pattern.stitched_dimensions[0] as f32);
-                let y_min = (camera.position[1] - (camera.viewport[1] / (2.0 * camera.zoom)))
-                    .ceil().max(0.0);
-                let y_max = (camera.position[1] + (camera.viewport[1] / (2.0 * camera.zoom)))
-                    .floor().min(pattern.stitched_dimensions[1] as f32);
-                println!("x: {}, {}; y: {}, {}; total: {}", x_min, x_max, y_min, y_max, (x_max-x_min + y_max-y_min));
+                let x_grids = GridlineIter::new(
+                    (camera.position[0] - (camera.viewport[0] / (2.0 * camera.zoom))).ceil(),
+                    (camera.position[0] + (camera.viewport[0] / (2.0 * camera.zoom))).floor(),
+                    0.0,
+                    pattern.stitched_dimensions[0] as f32,
+                    0.0,
+                    pattern.stitched_dimensions[1] as f32,
+                    utils::Axis::X,
+                );
+                let y_grids = GridlineIter::new(
+                    (camera.position[1] - (camera.viewport[1] / (2.0 * camera.zoom))).ceil(),
+                    (camera.position[1] + (camera.viewport[1] / (2.0 * camera.zoom))).floor(),
+                    0.0,
+                    pattern.stitched_dimensions[1] as f32,
+                    0.0,
+                    pattern.stitched_dimensions[0] as f32,
+                    utils::Axis::Y,
+                );
 
-                let mut vertices = vec![];
-                for x_pos in (x_min as i16)..=(x_max as i16) {
-                    let x_pos = x_pos as f32;
-                    let x_clip = ((x_pos - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
-                    let width = 1.0 / (camera.viewport[0] / 2.0);
-                    vertices.extend([
-                        // Top right
-                        utils::Vertex{position: [x_clip - width / 2.0, 1.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [x_clip + width / 2.0, 1.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [x_clip + width / 2.0, -1.0], color: [1.0, 1.0, 1.0]},
-                        //Bottom left
-                        utils::Vertex{position: [x_clip - width / 2.0, 1.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [x_clip + width / 2.0, -1.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [x_clip - width / 2.0, -1.0], color: [1.0, 1.0, 1.0]},
-                    ]);
-                }
-                for y_pos in (y_min as i16)..=(y_max as i16) {
-                    let y_pos = y_pos as f32;
-                    let y_clip = ((y_pos - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
-                    let width = 1.0 / (camera.viewport[1] / 2.0);
-                    vertices.extend([
-                        // Top right
-                        utils::Vertex{position: [-1.0, y_clip + width / 2.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [1.0, y_clip + width / 2.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [1.0, y_clip - width / 2.0], color: [1.0, 1.0, 1.0]},
-                        //Bottom left
-                        utils::Vertex{position: [-1.0, y_clip + width / 2.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [1.0, y_clip - width / 2.0], color: [1.0, 1.0, 1.0]},
-                        utils::Vertex{position: [-1.0, y_clip - width / 2.0], color: [1.0, 1.0, 1.0]},
-                    ]);
-                }
-
-                resources.vertices = Dirty(vertices);
+                resources.vertices.dirty_with(|vertices| {
+                    for x_line in x_grids {
+                        vertices.extend(x_line.draw(camera));
+                    }
+                    for y_line in y_grids {
+                        vertices.extend(y_line.draw(camera));
+                    }
+                });
         } else {
             panic!("PatternRenderer not initialized!");
         }
     }
 
     /// Provides an instance of `PatternRendererCallback` to give to egui for painting.
-    pub fn render() -> PatternRendererCallback{ PatternRendererCallback {  } }
+    pub fn get_render() -> PatternRendererCallback{ PatternRendererCallback {  } }
 }
 
 /// Callback struct used by egui to draw our rendered scene into a panel.
@@ -192,8 +296,6 @@ impl egui_wgpu::CallbackTrait for PatternRendererCallback {
         ) -> Vec<wgpu::CommandBuffer> {
         if let Some(resources) = &mut callback_resources.get_mut::<PatternRendererResources>() {
             resources.vertices.if_dirty_clean_with(|vertices| {
-                println!("CPU vertex buffer dirty, uploading to gpu...");
-
                 // If the vertex buffer is about to overflow, repeatedly double it until large enough
                 let mut reallocation_needed = false;
                 while vertices.len() as u64 > resources.vertex_buffer_len {

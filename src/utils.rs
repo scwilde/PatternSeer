@@ -10,7 +10,7 @@ pub struct Vertex {
     pub position: [f32; 2],
     // TODO Replace with a Vec3 from a crate, prob numix
     /// red, green, and blue color values of this vertex.
-    pub color: [f32; 3]
+    pub color: [f32; 3],
 }
 
 
@@ -21,6 +21,7 @@ pub struct Triangle {
 }
 
 
+#[derive(Clone, Copy)]
 pub enum Axis {
     X,
     Y,
