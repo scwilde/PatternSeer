@@ -27,7 +27,7 @@ impl PatternSeer {
     fn new(cc: &eframe::CreationContext) -> Self {
         PatternRenderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
-        let pattern = Pattern { stitched_dimensions: [20, 20] };
+        let pattern = Pattern { stitched_dimensions: [2000, 2000] };
         let camera = Camera::new(&pattern);
 
         PatternSeer {

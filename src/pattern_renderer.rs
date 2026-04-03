@@ -60,8 +60,10 @@ struct GridlineIter {
     grid_max: f32,
     draw_min: f32,
     draw_max: f32,
+    step: f32,
     curr: f32,
     axis: utils::Axis,
+    done: bool,
 }
 impl GridlineIter {
     fn new(
@@ -71,6 +73,7 @@ impl GridlineIter {
             grid_max: f32,
             draw_min: f32,
             draw_max: f32,
+            step: f32,
             axis: utils::Axis
         ) -> Self {
         Self {
@@ -80,8 +83,10 @@ impl GridlineIter {
             grid_max,
             draw_min,
             draw_max,
+            step,
             curr: render_min.max(grid_min),
-            axis
+            axis,
+            done: false,
         }
     }
 }
@@ -89,27 +94,33 @@ impl Iterator for GridlineIter {
     type Item = Gridline;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+        if self.curr == self.working_min {
+            self.curr -= self.curr % self.step;
+        }
         let position = self.curr;
-        self.curr += 1.0;
+        self.curr += self.step;
+        self.curr = self.curr.min(self.working_max);
 
         let weight = match position {
             p if p == self.grid_min || p == self.grid_max => 5.0,
-            p if p % 10.0 == 0.0 => 3.0,
+            p if p % (100.0 * self.step) == 0.0 => 5.0,
+            p if p % (10.0 * self.step) == 0.0 => 3.0,
             _ => 1.0,
         };
 
-        if position > self.working_max {
-            return None;
-        } else {
-            return Some(Gridline {
-                position,
-                draw_min: self.draw_min,
-                draw_max: self.draw_max,
-                weight,
-                axis: self.axis,
-            });
+        if position == self.working_max {
+            self.done = true;
         }
-
+        Some(Gridline {
+            position,
+            draw_min: self.draw_min,
+            draw_max: self.draw_max,
+            weight,
+            axis: self.axis,
+        })
     }
 }
 
@@ -244,6 +255,7 @@ impl PatternRenderer {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()
             .callback_resources.get_mut::<PatternRendererResources>() {
+                let grid_step = 10.0_f32.powi((((5.0 / camera.zoom).log10() + 1.0).floor() as i32).max(0));
 
                 // Calculate min and max grid positions
                 let x_grids = GridlineIter::new(
@@ -253,6 +265,7 @@ impl PatternRenderer {
                     pattern.stitched_dimensions[0] as f32,
                     0.0,
                     pattern.stitched_dimensions[1] as f32,
+                    grid_step,
                     utils::Axis::X,
                 );
                 let y_grids = GridlineIter::new(
@@ -262,6 +275,7 @@ impl PatternRenderer {
                     pattern.stitched_dimensions[1] as f32,
                     0.0,
                     pattern.stitched_dimensions[0] as f32,
+                    grid_step,
                     utils::Axis::Y,
                 );
 

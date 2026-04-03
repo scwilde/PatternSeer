@@ -46,6 +46,7 @@ impl Camera {
         self.position[0] = self.position[0].min(self.position_bounds[0][1]).max(self.position_bounds[0][0]);
         self.position[1] = self.position[1].min(self.position_bounds[1][1]).max(self.position_bounds[1][0]);
     }
+
     pub fn limit_zoom(&mut self, pattern: &Pattern) {
         let margin = 50.0;
         let min_zoom_x = (self.viewport[0] - (margin * 2.0)) / pattern.stitched_dimensions[0] as f32;
