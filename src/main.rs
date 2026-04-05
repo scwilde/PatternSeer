@@ -1,4 +1,5 @@
 use eframe::{egui, egui_wgpu};
+use glam::{Vec2, Vec3};
 use crate::camera::Camera;
 use crate::pattern::Pattern;
 use crate::pattern_renderer::PatternRenderer;
@@ -27,7 +28,7 @@ impl PatternSeer {
     fn new(cc: &eframe::CreationContext) -> Self {
         PatternRenderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
-        let pattern = Pattern { stitched_dimensions: [2000, 2000] };
+        let pattern = Pattern { stitched_dimensions: Vec2::new(2000.0, 2000.0) };
         let camera = Camera::new(&pattern);
 
         PatternSeer {
@@ -43,7 +44,7 @@ impl eframe::App for PatternSeer {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             // Create our rendering canvas filling all available space
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
-            if self.camera.inner().viewport != [canvas_rect.width(), canvas_rect.height()] {
+            if self.camera.inner().viewport != Vec2::new(canvas_rect.width(), canvas_rect.height()) {
                 self.camera.dirty_with(|camera| camera.resize(canvas_rect.width(), canvas_rect.height(), &self.pattern));
             }
 
@@ -64,7 +65,7 @@ impl eframe::App for PatternSeer {
 
             // Render the canvas
             self.camera.if_dirty_clean_with(|camera| {
-                PatternRenderer::clear_with_color([1.0, 1.0, 1.0], frame);
+                PatternRenderer::clear_with_color(Vec3::new(1.0, 1.0, 1.0), frame);
                 PatternRenderer::render_grid(&self.pattern, camera, frame);
             });
             let render_callback = PatternRenderer::get_render();

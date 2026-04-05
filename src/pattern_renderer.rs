@@ -1,4 +1,5 @@
 use eframe::{egui, egui_wgpu::{self, wgpu}};
+use glam::{Vec3, Vec2};
 use crate::{camera::Camera, pattern::Pattern, utils::{self, Vertex, Volatile::{self, *}}};
 use std::borrow::Cow;
 
@@ -14,21 +15,40 @@ impl Gridline {
     fn draw(&self, camera: &Camera) -> [utils::Vertex; 6] {
         match self.axis {
             utils::Axis::X => {
-                let x_clip = ((self.position - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
-                let draw_min_clip = ((self.draw_min - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
-                let draw_max_clip = ((self.draw_max - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
-                let weight = self.weight / (camera.viewport[0] / 2.0);
-                let corner_fix = (self.weight / 4.0) / (camera.viewport[1] / 2.0);
+                let x_clip = ((self.position - camera.position.x) * camera.zoom) / (camera.viewport.x / 2.0);
+                let draw_min_clip = ((self.draw_min - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0);
+                let draw_max_clip = ((self.draw_max - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0);
+                let weight = self.weight / (camera.viewport.x / 2.0);
+                let corner_fix = (self.weight / 4.0) / (camera.viewport.x / 2.0);
+                let draw_color = Vec3::new(0.0, 0.0, 0.0);
 
                 [
                     // Top right
-                    utils::Vertex{position: [x_clip - weight / 2.0, draw_max_clip + corner_fix], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [x_clip + weight / 2.0, draw_max_clip + corner_fix], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [x_clip + weight / 2.0, draw_min_clip - corner_fix], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{
+                        position: Vec2::new(x_clip - weight / 2.0, draw_max_clip + corner_fix),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(x_clip + weight / 2.0, draw_max_clip + corner_fix),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(x_clip + weight / 2.0, draw_min_clip - corner_fix),
+                        color: draw_color,
+                    },
                     //Bottom left
-                    utils::Vertex{position: [x_clip - weight / 2.0, draw_max_clip + corner_fix], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [x_clip + weight / 2.0, draw_min_clip - corner_fix], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [x_clip - weight / 2.0, draw_min_clip - corner_fix], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{
+                        position: Vec2::new(x_clip - weight / 2.0, draw_max_clip + corner_fix),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(x_clip + weight / 2.0, draw_min_clip - corner_fix),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(x_clip - weight / 2.0, draw_min_clip - corner_fix),
+                        color: draw_color,
+                    },
                 ]
             },
             utils::Axis::Y => {
@@ -36,17 +56,36 @@ impl Gridline {
                 let draw_min_clip = ((self.draw_min - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
                 let draw_max_clip = ((self.draw_max - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
                 let weight = self.weight / (camera.viewport[1] / 2.0);
-                let corner_fix = (self.weight / 4.0) / (camera.viewport[1] / 2.0);
+                let corner_fix = (self.weight / 4.0) / (camera.viewport.y / 2.0);
+                let draw_color = Vec3::new(0.0, 0.0, 0.0);
 
                 [
                     // Top right
-                    utils::Vertex{position: [draw_min_clip - corner_fix, y_clip + weight / 2.0], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [draw_max_clip + corner_fix, y_clip + weight / 2.0], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [draw_max_clip + corner_fix, y_clip - weight / 2.0], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{
+                        position: Vec2::new(draw_min_clip - corner_fix, y_clip + weight / 2.0),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(draw_max_clip + corner_fix, y_clip + weight / 2.0),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(draw_max_clip + corner_fix, y_clip - weight / 2.0),
+                        color: draw_color,
+                    },
                     //Bottom left
-                    utils::Vertex{position: [draw_min_clip - corner_fix, y_clip + weight / 2.0], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [draw_max_clip + corner_fix, y_clip - weight / 2.0], color: [0.0, 0.0, 0.0]},
-                    utils::Vertex{position: [draw_min_clip - corner_fix, y_clip - weight / 2.0], color: [0.0, 0.0, 0.0]},
+                    utils::Vertex{
+                        position: Vec2::new(draw_min_clip - corner_fix, y_clip + weight / 2.0),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(draw_max_clip + corner_fix, y_clip - weight / 2.0),
+                        color: draw_color,
+                    },
+                    utils::Vertex{
+                        position: Vec2::new(draw_min_clip - corner_fix, y_clip - weight / 2.0),
+                        color: draw_color,
+                    },
                 ]
             }
         }
@@ -77,14 +116,14 @@ impl GridlineIter {
             axis: utils::Axis
         ) -> Self {
         Self {
-            working_min: render_min.max(grid_min),
-            working_max: render_max.min(grid_max),
+            working_min: utils::maxf32(render_min, grid_min),
+            working_max: utils::minf32(render_max, grid_max),
             grid_min,
             grid_max,
             draw_min,
             draw_max,
             step,
-            curr: render_min.max(grid_min),
+            curr: utils::maxf32(render_min, grid_min),
             axis,
             done: false,
         }
@@ -172,7 +211,7 @@ impl PatternRenderer {
                     format: wgpu::VertexFormat::Float32x2,
                 },
                 wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 2]>() as u64,
+                    offset: std::mem::size_of::<Vec2>() as u64,
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x3,
                 },
@@ -227,17 +266,17 @@ impl PatternRenderer {
         });
     }
 
-    pub fn clear_with_color(color: [f32; 3], frame: &mut eframe::Frame) {
+    pub fn clear_with_color(color: Vec3, frame: &mut eframe::Frame) {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()
             .callback_resources.get_mut::<PatternRendererResources>() {
                 resources.vertices = Dirty(vec![
-                    Vertex { position: [-1.0, 1.0], color },
-                    Vertex { position: [1.0, 1.0], color },
-                    Vertex { position: [1.0, -1.0], color },
-                    Vertex { position: [-1.0, 1.0], color },
-                    Vertex { position: [1.0, -1.0], color },
-                    Vertex { position: [-1.0, -1.0], color },
+                    Vertex { position: Vec2::new(-1.0,  1.0), color },
+                    Vertex { position: Vec2::new( 1.0,  1.0), color },
+                    Vertex { position: Vec2::new( 1.0, -1.0), color },
+                    Vertex { position: Vec2::new(-1.0,  1.0), color },
+                    Vertex { position: Vec2::new( 1.0, -1.0), color },
+                    Vertex { position: Vec2::new(-1.0, -1.0), color },
                 ]);
         } else {
             panic!("PatternRenderer not initialized!");

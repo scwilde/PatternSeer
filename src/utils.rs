@@ -1,4 +1,5 @@
 use bytemuck;
+use glam::{Vec2, Vec3};
 
 
 /// A single point in 2D space containing a position and color.
@@ -7,10 +8,10 @@ use bytemuck;
 pub struct Vertex {
     // TODO Replace with a Vec2 from a crate, prob numix
     /// X and Y position of this vertex in space.
-    pub position: [f32; 2],
+    pub position: Vec2,
     // TODO Replace with a Vec3 from a crate, prob numix
     /// red, green, and blue color values of this vertex.
-    pub color: [f32; 3],
+    pub color: Vec3,
 }
 
 
@@ -93,4 +94,20 @@ impl<T: Default> Default for Volatile<T>
     fn default() -> Self {
         Volatile::Clean(T::default())
     }
+}
+
+pub fn minf32(a: f32, b: f32) -> f32 {
+    a.min(b)
+}
+
+pub fn maxf32(a: f32, b: f32) -> f32 {
+    a.max(b)
+}
+
+pub fn minf64(a: f64, b: f64) -> f64 {
+    a.min(b)
+}
+
+pub fn maxf64(a: f64, b: f64) -> f64 {
+    a.max(b)
 }
