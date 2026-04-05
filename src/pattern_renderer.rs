@@ -255,6 +255,7 @@ impl PatternRenderer {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()
             .callback_resources.get_mut::<PatternRendererResources>() {
+                // TODO Optimization: calculate this only on zoom events and store inside camera
                 let grid_step = 10.0_f32.powi((((5.0 / camera.zoom).log10() + 1.0).floor() as i32).max(0));
 
                 // Calculate min and max grid positions

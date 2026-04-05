@@ -1,57 +1,44 @@
--[X] change triangle to gridlines
-    - [X] when camera moves, mark it as dirty
-    - [X] Send canvas to Renderer
-    - [X] only do all this if the camera is dirty
-        - [X] Gridline culling. Renderer generates gridline limits within view as an iterator.
-            these are world-space gridline positions
-                min_x = ceil(Camera.X - (Camera.Width / 2*Camera.Zoom)) | clamped to 0
-                max_x = floor(Camera.X - (Camera.Width / 2*Camera.Zoom)) | clamped to canvas.width
-                min_y = ceil(Camera.Y - (Camera.Height / 2*Camera.Zoom)) | clamped to 0
-                max_y = floor(Camera.Y - (Camera.Height / 2*Camera.Zoom)) | clamped to canvas.height
-        - [X] next we iterate over each grid line
-            - [X] get gridline's x or y position in space
-            - [X] generate an `offset` value. 1x grids have an offset of 1px, 10x have an offset of 2px,
-                gridlines 0 and canvas width/height have an offset of 3.
-            - [X] for x gridlines produce the vertices
-                (precalculate x-offset/2 and x+offset/2)
-                [
-                    [x-offset/2, -1],
-                    [x+offset/2, -1],
-                    [x-offset/2, 1],
-                    [x+offset/2, -1],
-                    [x+offset/2, 1],
-                    [x-offset/2, 1],
-                ]
-            - [X] and for y produce these vertices
-                (precalculate y-offset/2 and y+offset/2)
-                [
-                    [-1, y+offset/2],
-                    [1, y+offset/2],
-                    [1, y-offset/2],
-                    [-1, y+offset/2],
-                    [1, y-offset/2],
-                    [-1, y-offset/2],
-                ]
-            - [X] Collapse all these vertices into a vec and save into `callback_resources`; mark vertices dirty
-        - [X] In the prepare stage, if the vertices are dirty upload them to the gpu
-- [X] Set grid lines to be bound by pattern edges
-- [X] Change grid to be black on white
-- [X] Stop the user from wandering too far from the canvas
-- [X] Stop the user from zooming too far in or out
-- [X] change line's width if it is a multiple of 10
-- [] cull any squares that are smaller than 4 px
-- [] shift the line width levels down when this culling happens
+-[] Housekeeping
+    - [] Change all the arrays into vecs
+    - [] Update documentation
+    - [] Pop renderer for the grid out into its own thing
+-[] Move the zoom level calculation into the camera and then call it each time the camera zooms only
 
+-- GPU API --
 
-then each frame we need to
-    - get all the grid lines in view
-        
-    - convert their world-space coordinates to clip space
-    - generate a quad for each line in clip space
-    - send these quads into the render pipeline to be rendered
+-[] Abstract all renderer code into its own API
+    - The goal is that if I change what backend GPU API I use, I only have to change the implementation of this
+      API, rather than changing anything about the actual renderers.
+    - Also, try to avoid scope creep please; only write stuff we have an immediate need for; ***IMMEDIATE*** need
+    -[] We create a GPU context *once* and store it inside the App
+    -[] Renderers are sent the GPU context
+    -[] Renderers attach their own <Renderer>Resources class to the callback_resources of the GPU context
+    -[] Some sort of GPU utils class will provide abstraction over creating pipelines and managing other Resources
+    -[] Each renderer will have a Mesh class or something similar that manages the buffer
+         lifetime and the dirtiness of its data
 
+-- Pattern loading -- 
 
-also we need to create the render pipeline with the shaders
+-[] Add ability to load a pattern from an SQLite DB
+    -[] Pattern should be divided into 64x64 tiles
+    -[] We need a cache of tiles currently in view
+        - What do we do when the entie canvas is in view? We don't want to load every single tile, do we?
+          - Nope, we do not; My guestimate is that that would be about 1.5 Gb of ram with a max canvas size of 10k x 10k
 
+-- Pattern rendering (easy ?)
 
+-[] Add ability to render that pattern
+    -[] Basic zoomed in rendering
+    -[] Mipmap rendering when zoomed out
 
+-- Basic brush system and pattern editing --
+
+-[] Add ability to edit pattern one pixel at a time
+-[] Add increased brush size
+-[] Add delta interpolation of brush
+
+-- Floss & color system --
+!! Can we release 1.0 here??? !!
+-- Special Stitches; Backstitching, /4 stitches, petite --
+-- Meat and potatoes: Digitization tools --
+-- Meat and potatoes: Pixel art tools like dithering --
