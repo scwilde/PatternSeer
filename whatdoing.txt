@@ -1,8 +1,15 @@
+
 -[] Housekeeping
-    - [~] Change all the arrays into VecNs
-          Mostly done; unsure how to do camera.position_bounds
-    - [] Update documentation
-    - [] Pop renderer for the grid out into its own thing
+    -[~] Change all the arrays into VecNs
+        Mostly done; unsure how to do camera.position_bounds
+    -[] Update documentation
+    -[X] Pop renderer for the grid out into its own thing
+-[] geometry API
+    -[] Colors
+    -[] positions
+    -[] bounds
+    -[] quads
+    -[] tris
 -[] Move the zoom level calculation into the camera and then call it each time the camera zooms only
 
 -- GPU API --

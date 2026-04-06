@@ -165,7 +165,7 @@ impl Iterator for GridlineIter {
 
 
 /// Used for the storage of resources between render stages.
-struct PatternRendererResources {
+struct GridRendererResources {
     /// Reference to the vertex buffer we set up for rendering.
     vertex_buffer: wgpu::Buffer,
     /// Length of the vertex buffer in vertices.
@@ -179,9 +179,9 @@ struct PatternRendererResources {
 
 
 /// Handles all of the heavy rendering tasks or delegates them to GPU.
-pub struct PatternRenderer { }
+pub struct GridRenderer { }
 
-impl PatternRenderer {
+impl GridRenderer {
     /// Initializes the stored `PatternRendererResources` thats accessible to other render stages from `callback_resources`.
     /// 
     /// # Parameters
@@ -258,7 +258,7 @@ impl PatternRenderer {
             cache: None,
         });
 
-        callback_resources.insert(PatternRendererResources {
+        callback_resources.insert(GridRendererResources {
             vertex_buffer,
             vertex_buffer_len: initial_vertex_count,
             render_pipeline,
@@ -269,7 +269,7 @@ impl PatternRenderer {
     pub fn clear_with_color(color: Vec3, frame: &mut eframe::Frame) {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()
-            .callback_resources.get_mut::<PatternRendererResources>() {
+            .callback_resources.get_mut::<GridRendererResources>() {
                 resources.vertices = Dirty(vec![
                     Vertex { position: Vec2::new(-1.0,  1.0), color },
                     Vertex { position: Vec2::new( 1.0,  1.0), color },
@@ -293,7 +293,7 @@ impl PatternRenderer {
     pub fn render_grid(pattern: &Pattern, camera: &Camera, frame: &mut eframe::Frame) {
         if let Some(resources) = frame.wgpu_render_state().unwrap()
             .renderer.write()
-            .callback_resources.get_mut::<PatternRendererResources>() {
+            .callback_resources.get_mut::<GridRendererResources>() {
                 // TODO Optimization: calculate this only on zoom events and store inside camera
                 let grid_step = 10.0_f32.powi((((5.0 / camera.zoom).log10() + 1.0).floor() as i32).max(0));
 
@@ -333,13 +333,13 @@ impl PatternRenderer {
     }
 
     /// Provides an instance of `PatternRendererCallback` to give to egui for painting.
-    pub fn get_render() -> PatternRendererCallback{ PatternRendererCallback {  } }
+    pub fn get_render() -> GridRendererCallback{ GridRendererCallback {  } }
 }
 
 /// Callback struct used by egui to draw our rendered scene into a panel.
 #[derive(Clone, Copy)]
-pub struct PatternRendererCallback { }
-impl egui_wgpu::CallbackTrait for PatternRendererCallback {
+pub struct GridRendererCallback { }
+impl egui_wgpu::CallbackTrait for GridRendererCallback {
     fn prepare(
             &self,
             device: &wgpu::Device,
@@ -348,7 +348,7 @@ impl egui_wgpu::CallbackTrait for PatternRendererCallback {
             _egui_encoder: &mut wgpu::CommandEncoder,
             callback_resources: &mut egui_wgpu::CallbackResources,
         ) -> Vec<wgpu::CommandBuffer> {
-        if let Some(resources) = &mut callback_resources.get_mut::<PatternRendererResources>() {
+        if let Some(resources) = &mut callback_resources.get_mut::<GridRendererResources>() {
             resources.vertices.if_dirty_clean_with(|vertices| {
                 // If the vertex buffer is about to overflow, repeatedly double it until large enough
                 let mut reallocation_needed = false;
@@ -381,7 +381,7 @@ impl egui_wgpu::CallbackTrait for PatternRendererCallback {
             render_pass: &mut wgpu::RenderPass<'static>,
             callback_resources: &egui_wgpu::CallbackResources
         ) {
-        if let Some(resources) = callback_resources.get::<PatternRendererResources>() {
+        if let Some(resources) = callback_resources.get::<GridRendererResources>() {
             render_pass.set_pipeline(&resources.render_pipeline);
             render_pass.set_vertex_buffer(0, resources.vertex_buffer.slice(..));
             render_pass.draw(0..resources.vertices.inner().len() as u32, 0..1);

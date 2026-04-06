@@ -2,11 +2,12 @@ use eframe::{egui, egui_wgpu};
 use glam::{Vec2, Vec3};
 use crate::camera::Camera;
 use crate::pattern::Pattern;
-use crate::pattern_renderer::PatternRenderer;
+// use crate::grid_renderer::GridRenderer;
 use crate::utils::Volatile::{self, *};
 
 
-mod pattern_renderer;
+// mod grid_renderer;
+mod renderer;
 mod utils;
 mod camera;
 mod pattern;
@@ -26,7 +27,7 @@ impl PatternSeer {
     /// 
     /// * 'cc' - `CreationContext` provided by something like `eframe::run_native()`.
     fn new(cc: &eframe::CreationContext) -> Self {
-        PatternRenderer::init(cc.wgpu_render_state.as_ref().unwrap());
+        // GridRenderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
         let pattern = Pattern { stitched_dimensions: Vec2::new(2000.0, 2000.0) };
         let camera = Camera::new(&pattern);
@@ -60,18 +61,19 @@ impl eframe::App for PatternSeer {
                     self.camera.dirty_with(|camera| camera.zoom(scroll_delta.y));
                 }
             }
-            self.camera.inner_mut().limit_pan(&self.pattern);
-            self.camera.inner_mut().limit_zoom(&self.pattern);
+            
+            // // Render the canvas
+            // self.camera.if_dirty_clean_with(|camera| {
+            //     self.camera.inner_mut().limit_pan(&self.pattern);
+            //     self.camera.inner_mut().limit_zoom(&self.pattern);
 
-            // Render the canvas
-            self.camera.if_dirty_clean_with(|camera| {
-                PatternRenderer::clear_with_color(Vec3::new(1.0, 1.0, 1.0), frame);
-                PatternRenderer::render_grid(&self.pattern, camera, frame);
-            });
-            let render_callback = PatternRenderer::get_render();
+            //     GridRenderer::clear_with_color(Vec3::new(1.0, 1.0, 1.0), frame);
+            //     GridRenderer::render_grid(&self.pattern, camera, frame);
+            // });
+            // let render_callback = GridRenderer::get_render();
 
-            let callback_shape = egui_wgpu::Callback::new_paint_callback(canvas_rect, render_callback);
-            ui.painter().add(callback_shape);
+            // let callback_shape = egui_wgpu::Callback::new_paint_callback(canvas_rect, render_callback);
+            // ui.painter().add(callback_shape);
         });
     }
 }
@@ -89,6 +91,7 @@ fn main() -> anyhow::Result<()>{
         "PatternSeer",
         native_options, Box::new(|cc| { Ok(Box::new(PatternSeer::new(cc))) }
     ))?;
-    
+
+
     Ok(())
 }
