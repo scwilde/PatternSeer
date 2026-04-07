@@ -1,22 +1,23 @@
-use eframe::egui_wgpu::wgpu;
+use std::{any::TypeId, collections::HashMap};
+
+use eframe::egui_wgpu::{self, wgpu};
 use crate::renderer::geometry;
 
 
 pub struct Mesh<'a> {
-    label: Option<&'a str>,
+    gpu_device: wgpu::Device,
     vertex_buffer: wgpu::Buffer,
     pub vertex_buffer_layout: wgpu::VertexBufferLayout<'a>,
-    vertex_buffer_len: u64,
-    geometry: Vec<Vec<u8>>,
-    geometry_len: usize,
-    uploaded_chunks: u32,
+    vertex_buffer_size: u64,
+    geometry: HashMap<TypeId, (u64, Vec<u8>)>,
+    geometry_size: usize,
 }
 
 impl<'a> Mesh<'a> {
-    pub fn new(buffer_label: Option<&'a str>, gpu_device: &wgpu::Device, vertex_buffer_len: u64) -> Self {
+    pub fn new(gpu_device: &wgpu::Device, initial_size: u64) -> Self {
         let vertex_buffer = gpu_device.create_buffer(&wgpu::BufferDescriptor {
-            label: buffer_label,
-            size: vertex_buffer_len,
+            label: Some("Mesh vertex buffer"),
+            size: initial_size,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -41,26 +42,26 @@ impl<'a> Mesh<'a> {
         };
 
         Self {
-            label: buffer_label,
+            gpu_device: gpu_device.clone(),
             vertex_buffer,
             vertex_buffer_layout,
-            vertex_buffer_len,
-            geometry: vec![],
-            geometry_len: 0,
-            uploaded_chunks: 0,
+            vertex_buffer_size: initial_size,
+            geometry: HashMap::new(),
+            geometry_size: 0,
         }
     }
 
-    pub fn extend_buffer(&mut self, gpu_device: wgpu::Device) {
+    pub fn extend_buffer(&mut self) {
         let mut reallocation_needed = false;
-        while self.geometry_len as u64 > self.vertex_buffer_len {
+        while self.geometry_size as u64 > self.vertex_buffer_size {
             reallocation_needed = true;
-            self.vertex_buffer_len *= 2;
+            self.vertex_buffer_size *= 2;
+            println!("Vertex buffer exceeded, extending buffer to {} bytes", self.vertex_buffer_size);
         }
         if reallocation_needed {
-            let new_vertex_buffer = gpu_device.create_buffer(&wgpu::BufferDescriptor {
-                label: self.label,
-                size: self.vertex_buffer_len,
+            let new_vertex_buffer = self.gpu_device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Mesh vertex buffer"),
+                size: self.vertex_buffer_size,
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
@@ -69,17 +70,24 @@ impl<'a> Mesh<'a> {
         }
     }
 
-    pub fn append_verts(&mut self, verts: &[geometry::Vertex]) -> Result<(), String>{
-        let newbytes: Vec<u8> = bytemuck::cast_slice(verts).to_vec();
-
-        self.geometry_len += newbytes.len();
-        self.geometry.push(newbytes);
-
-        if self.geometry_len as u64 > self.vertex_buffer_len {
-            return Err(String::from("Stored geometry has surpassed the allocated vram. You should call extend_buffer()"));
-        } else {
-            return Ok(());
+    pub fn append_verts(
+        &mut self,
+        bind_callback: TypeId,
+        verts: &[geometry::Vertex],
+    ) -> Result<(), String> {
+        if self.geometry.contains_key(&bind_callback) {
+            return Err(format!("The callback type {:?} is already bound to another block of geometry", bind_callback))
         }
+        
+        let newbytes: Vec<u8> = bytemuck::cast_slice(verts).to_vec();
+        let offset = self.geometry_size;
+        self.geometry_size += newbytes.len();
+        self.geometry.insert(bind_callback, (offset as u64, newbytes));
+
+        if self.geometry_size as u64 > self.vertex_buffer_size {
+            self.extend_buffer();
+        }
+        Ok(())
     }
 
     // pub fn append_tris(tris: &[geometry::Triangle]) {
@@ -89,5 +97,15 @@ impl<'a> Mesh<'a> {
     // pub fn append_quads(quads: &[geometry::Quad]) {
 
     // }
+
+    pub fn get(&mut self, bound_callback: &TypeId) -> Option<(&wgpu::Buffer, u64, &[u8])> {
+        let (offset, bytes) = self.geometry.get(bound_callback)?;
+        Some((&self.vertex_buffer, *offset, bytes.as_slice()))
+    }
+
+    pub fn clear(&mut self) {
+        self.geometry.clear();
+        self.geometry_size = 0;
+    }
 }
 
