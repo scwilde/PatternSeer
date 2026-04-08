@@ -2,6 +2,12 @@ use bytemuck;
 use glam::Vec2;
 
 
+#[derive(Debug, Clone, Copy)]
+pub enum Axis {
+    X,
+    Y,
+}
+
 /// A single point in 2D space containing a position and color.
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable, PartialEq, Debug)]

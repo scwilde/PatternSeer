@@ -16,7 +16,7 @@ use std::borrow::Cow;
 
 mod geometry;
 mod mesh;
-// mod grid_renderer;
+pub mod grid_renderer;
 // mod render_utils;
 
 
@@ -78,55 +78,4 @@ pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
         rendered_mesh,
         gpu_device,
     });
-}
-
-pub fn render_grid(render_context: &mut RenderContext, camera: &Camera, pattern: &Pattern) -> GridRendererCallback {
-    render_context.rendered_mesh.append_verts(TypeId::of::<GridRendererCallback>(), &[
-        Vertex { position: Vec2::new(-1.0,  1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new( 1.0,  1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new( 1.0, -1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new(-1.0,  1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new( 1.0, -1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new(-1.0, -1.0), color: Color::WHITE },
-    ]).expect("Memory leak");
-
-    GridRendererCallback {  }
-}
-
-#[derive(Clone, Copy)]
-pub struct GridRendererCallback { }
-impl egui_wgpu::CallbackTrait for GridRendererCallback {
-    fn prepare(
-            &self,
-            device: &wgpu::Device,
-            queue: &wgpu::Queue,
-            _screen_descriptor: &egui_wgpu::ScreenDescriptor,
-            _egui_encoder: &mut wgpu::CommandEncoder,
-            callback_resources: &mut egui_wgpu::CallbackResources,
-        ) -> Vec<wgpu::CommandBuffer> {
-        if let Some(render_context) = &mut callback_resources.get_mut::<RenderContext>() {
-            let (vertex_buffer, buffer_pos, vert_bytes) = render_context.rendered_mesh
-                .get(&TypeId::of::<Self>()).unwrap();
-
-            queue.write_buffer(vertex_buffer, buffer_pos.offset_bytes, vert_bytes);
-        }
-
-        Vec::new()
-    }
-
-    fn paint(
-            &self,
-            _info: egui::PaintCallbackInfo,
-            render_pass: &mut wgpu::RenderPass<'static>,
-            callback_resources: &egui_wgpu::CallbackResources
-        ) {
-        if let Some(render_context) = callback_resources.get::<RenderContext>() {
-            let (vertex_buffer, buffer_pos, vert_bytes) = render_context.rendered_mesh
-                .get(&TypeId::of::<Self>()).unwrap();
-
-            render_pass.set_pipeline(&render_context.render_pipeline);
-            render_pass.set_vertex_buffer(0, vertex_buffer.slice(buffer_pos.offset_bytes..buffer_pos.len_bytes));
-            render_pass.draw(buffer_pos.offset_verts..buffer_pos.len_verts, 0..1);
-        }
-    }
 }

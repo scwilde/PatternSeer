@@ -72,7 +72,7 @@ impl eframe::App for PatternSeer {
             self.camera.inner_mut().limit_zoom(&self.pattern);
 
             render_context.rendered_mesh.clear();
-            let grid = renderer::render_grid(render_context, &self.camera.inner(), &self.pattern);
+            let grid = renderer::grid_renderer::render(render_context, &self.camera.inner(), &self.pattern);
             let grid_painter = egui_wgpu::Callback::new_paint_callback(canvas_rect, grid);
             ui.painter().add(grid_painter);
 
