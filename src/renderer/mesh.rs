@@ -1,15 +1,24 @@
 use std::{any::TypeId, collections::HashMap};
 
 use eframe::egui_wgpu::{self, wgpu};
+use wgpu::Buffer;
 use crate::renderer::geometry;
 
+#[derive(Debug)]
+pub struct BufferPosition {
+    pub offset_bytes: u64,
+    pub len_bytes: u64,
+    pub offset_verts: u32,
+    pub len_verts: u32,
+}
 
 pub struct Mesh<'a> {
     gpu_device: wgpu::Device,
     vertex_buffer: wgpu::Buffer,
     pub vertex_buffer_layout: wgpu::VertexBufferLayout<'a>,
     vertex_buffer_size: u64,
-    geometry: HashMap<TypeId, (u64, Vec<u8>)>,
+    geometry: HashMap<TypeId, (BufferPosition, Vec<u8>)>,
+    geometry_len: usize,
     geometry_size: usize,
 }
 
@@ -48,6 +57,7 @@ impl<'a> Mesh<'a> {
             vertex_buffer_size: initial_size,
             geometry: HashMap::new(),
             geometry_size: 0,
+            geometry_len: 0,
         }
     }
 
@@ -80,9 +90,18 @@ impl<'a> Mesh<'a> {
         }
         
         let newbytes: Vec<u8> = bytemuck::cast_slice(verts).to_vec();
+        let newbytes_len = newbytes.len();
         let offset = self.geometry_size;
-        self.geometry_size += newbytes.len();
-        self.geometry.insert(bind_callback, (offset as u64, newbytes));
+        self.geometry.insert(bind_callback, (
+            BufferPosition {
+                offset_bytes: self.geometry_size as u64,
+                len_bytes: newbytes_len as u64,
+                offset_verts: self.geometry_len.try_into().expect(""),
+                len_verts: verts.len().try_into().expect(""),
+            },
+            newbytes
+        ));
+        self.geometry_size += newbytes_len;
 
         if self.geometry_size as u64 > self.vertex_buffer_size {
             self.extend_buffer();
@@ -98,9 +117,9 @@ impl<'a> Mesh<'a> {
 
     // }
 
-    pub fn get(&mut self, bound_callback: &TypeId) -> Option<(&wgpu::Buffer, u64, &[u8])> {
-        let (offset, bytes) = self.geometry.get(bound_callback)?;
-        Some((&self.vertex_buffer, *offset, bytes.as_slice()))
+    pub fn get(&self, bound_callback: &TypeId) -> Option<(&wgpu::Buffer, &BufferPosition, &[u8])> {
+        let (buffer_pos, bytes) = self.geometry.get(bound_callback)?;
+        Some((&self.vertex_buffer, buffer_pos, bytes.as_slice()))
     }
 
     pub fn clear(&mut self) {

@@ -93,12 +93,6 @@ pub fn render_grid(render_context: &mut RenderContext, camera: &Camera, pattern:
     GridRendererCallback {  }
 }
 
-struct GridRendererResources {
-    vertex_buffer: wgpu::Buffer,
-    buffer_offset: u64,
-    data_length: u64,
-}
-
 #[derive(Clone, Copy)]
 pub struct GridRendererCallback { }
 impl egui_wgpu::CallbackTrait for GridRendererCallback {
@@ -111,15 +105,10 @@ impl egui_wgpu::CallbackTrait for GridRendererCallback {
             callback_resources: &mut egui_wgpu::CallbackResources,
         ) -> Vec<wgpu::CommandBuffer> {
         if let Some(render_context) = &mut callback_resources.get_mut::<RenderContext>() {
-            // let (vertex_buffer, offset, vertices) = render_context.rendered_mesh.pop().unwrap();
-            
-            // queue.write_buffer(vertex_buffer, offset, vertices);
+            let (vertex_buffer, buffer_pos, vert_bytes) = render_context.rendered_mesh
+                .get(&TypeId::of::<Self>()).unwrap();
 
-            // callback_resources.insert(GridRendererResources {
-            //     vertex_buffer,
-            //     buffer_offset: offset,
-            //     data_length: vertices.len(),
-            // });
+            queue.write_buffer(vertex_buffer, buffer_pos.offset_bytes, vert_bytes);
         }
 
         Vec::new()
@@ -132,11 +121,12 @@ impl egui_wgpu::CallbackTrait for GridRendererCallback {
             callback_resources: &egui_wgpu::CallbackResources
         ) {
         if let Some(render_context) = callback_resources.get::<RenderContext>() {
-            if let Some(resources) = callback_resources.get::<GridRendererResources>() {
-                // render_pass.set_pipeline(&resources.render_pipeline);
-                // render_pass.set_vertex_buffer(0, resources.vertex_buffer.slice(..));
-                // render_pass.draw(0..resources.vertices.inner().len() as u32, 0..1);
-            }
+            let (vertex_buffer, buffer_pos, vert_bytes) = render_context.rendered_mesh
+                .get(&TypeId::of::<Self>()).unwrap();
+
+            render_pass.set_pipeline(&render_context.render_pipeline);
+            render_pass.set_vertex_buffer(0, vertex_buffer.slice(buffer_pos.offset_bytes..buffer_pos.len_bytes));
+            render_pass.draw(buffer_pos.offset_verts..buffer_pos.len_verts, 0..1);
         }
     }
 }
