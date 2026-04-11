@@ -68,18 +68,22 @@ impl<T: Default> Default for Volatile<T> {
     }
 }
 
-pub fn minf32(a: f32, b: f32) -> f32 {
-    a.min(b)
+// ! These will produce undefined behavior if either value is a NaN
+mod sealed {
+    pub trait Float {  }
 }
 
-pub fn maxf32(a: f32, b: f32) -> f32 {
-    a.max(b)
+impl sealed::Float for f32 {  }
+impl sealed::Float for f64 {  }
+pub fn minf<F: sealed::Float + PartialOrd>(a: F, b: F) -> F  {
+    if a != a { a } 
+    else if b != b { b }
+    else if a < b { a } 
+    else { b }
 }
-
-pub fn minf64(a: f64, b: f64) -> f64 {
-    a.min(b)
-}
-
-pub fn maxf64(a: f64, b: f64) -> f64 {
-    a.max(b)
+pub fn maxf<F: sealed::Float + PartialOrd>(a: F, b: F) -> F  {
+    if a != a { a } 
+    else if b != b { b }
+    else if a > b { a } 
+    else { b }
 }

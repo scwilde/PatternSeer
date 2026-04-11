@@ -53,8 +53,8 @@ impl Camera {
         let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.stitched_dimensions[0] as f32;
         let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.stitched_dimensions[1] as f32;
 
-        self.zoom_bounds[0] = utils::minf32(min_zoom_x, min_zoom_y);
-        self.zoom_bounds[1] = utils::minf32(self.viewport.x, self.viewport.y) - (margin * 2.0);
+        self.zoom_bounds[0] = utils::minf(min_zoom_x, min_zoom_y);
+        self.zoom_bounds[1] = utils::minf(self.viewport.x, self.viewport.y) - (margin * 2.0);
 
         self.zoom = self.zoom.clamp(self.zoom_bounds[0], self.zoom_bounds[1]);
     }

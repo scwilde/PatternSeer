@@ -128,14 +128,14 @@ impl GridlineIter {
         axis: Axis,
     ) -> Self {
         Self {
-            working_min: utils::maxf32(render_min, grid_min),
-            working_max: utils::minf32(render_max, grid_max),
+            working_min: utils::maxf(render_min, grid_min),
+            working_max: utils::minf(render_max, grid_max),
             grid_min,
             grid_max,
             draw_min,
             draw_max,
             step,
-            curr: utils::maxf32(render_min, grid_min),
+            curr: utils::maxf(render_min, grid_min),
             axis,
             done: false,
         }

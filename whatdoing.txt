@@ -1,29 +1,20 @@
+--- Bug Fixes ---
+- [] Slight aliasing when very slowly panning the grid while zoomed out to right before a grid level change
+
+--- Current Work ---
 
 -[] Housekeeping
-    -[~] Change all the arrays into VecNs
-        Mostly done; unsure how to do camera.position_bounds
+    -[] Remove leftovers from old API
     -[] Update documentation
-    -[X] Pop renderer for the grid out into its own thing
+    -[] Clean up variable and field names
+    -[] Utility for handling bounds
 -[] geometry API
-    -[] Colors
+    -[X] Colors
     -[] positions
-    -[] bounds
+    -[X] verts
     -[] quads
     -[] tris
 -[] Move the zoom level calculation into the camera and then call it each time the camera zooms only
-
--- GPU API --
-
--[] Abstract all renderer code into its own API
-    - The goal is that if I change what backend GPU API I use, I only have to change the implementation of this
-      API, rather than changing anything about the actual renderers.
-    - Also, try to avoid scope creep please; only write stuff we have an immediate need for; ***IMMEDIATE*** need
-    -[] We create a GPU context *once* and store it inside the App
-    -[] Renderers are sent the GPU context
-    -[] Renderers attach their own <Renderer>Resources class to the callback_resources of the GPU context
-    -[] Some sort of GPU utils class will provide abstraction over creating pipelines and managing other Resources
-    -[] Each renderer will have a Mesh class or something similar that manages the buffer
-         lifetime and the dirtiness of its data
 
 -- Pattern loading -- 
 
@@ -45,8 +36,9 @@
 -[] Add increased brush size
 -[] Add delta interpolation of brush
 
--- Floss & color system --
-!! Can we release 1.0 here??? !!
+-- Basic Floss & color system --
+!! Can we release 0.1 here??? !!
 -- Special Stitches; Backstitching, /4 stitches, petite --
 -- Meat and potatoes: Digitization tools --
+-- Meat and potatoes: Color interpolation tools --
 -- Meat and potatoes: Pixel art tools like dithering --
