@@ -1,7 +1,6 @@
 use std::{any::TypeId, collections::HashMap};
 
-use eframe::egui_wgpu::{self, wgpu};
-use wgpu::Buffer;
+use eframe::egui_wgpu::wgpu;
 use crate::renderer::geometry;
 
 #[derive(Debug)]
@@ -91,7 +90,6 @@ impl<'a> Mesh<'a> {
         
         let newbytes: Vec<u8> = bytemuck::cast_slice(verts).to_vec();
         let newbytes_len = newbytes.len();
-        let offset = self.geometry_size;
         self.geometry.insert(bind_callback, (
             BufferPosition {
                 offset_bytes: self.geometry_size as u64,

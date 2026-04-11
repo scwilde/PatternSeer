@@ -1,6 +1,6 @@
 use crate::pattern::Pattern;
 use crate::utils;
-use glam::{Mat2, Vec2};
+use glam::Vec2;
 
 /// A camera object for panning and zooming.
 #[derive(Default, Debug)]
@@ -59,8 +59,9 @@ impl Camera {
         self.zoom = self.zoom.clamp(self.zoom_bounds[0], self.zoom_bounds[1]);
     }
 
-    pub fn resize(&mut self, width: f32, height: f32, pattern: &Pattern) {
-        self.viewport = Vec2::new(width, height);
+    pub fn resize(&mut self, width: f32, height: f32) {
+        self.viewport.x = width;
+        self.viewport.y = height;
     }
 
     /// Pans the camera through world space.

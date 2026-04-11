@@ -1,5 +1,5 @@
 use eframe::{egui, egui_wgpu};
-use glam::{Vec2, Vec3};
+use glam::Vec2;
 use crate::camera::Camera;
 use crate::pattern::Pattern;
 use crate::renderer::RenderContext;
@@ -60,21 +60,15 @@ impl eframe::App for PatternSeer {
                 }
             }
 
+            // Stop camera from zooming too far in/out or wandering too far from pattern
+            self.camera.limit_pan(&self.pattern);
+            self.camera.limit_zoom(&self.pattern);
+            
             // Render the canvas
             render_context.rendered_mesh.clear();
-            let grid = renderer::grid_renderer::render(render_context, &self.camera.inner(), &self.pattern);
+            let grid = renderer::grid_renderer::render(render_context, &self.camera, &self.pattern);
             let grid_painter = egui_wgpu::Callback::new_paint_callback(canvas_rect, grid);
             ui.painter().add(grid_painter);
-
-            // self.camera.if_dirty_clean_with(|camera| {
-
-            //     GridRenderer::clear_with_color(Vec3::new(1.0, 1.0, 1.0), frame);
-            //     GridRenderer::render_grid(&self.pattern, camera, frame);
-            // });
-            // let render_callback = GridRenderer::get_render();
-
-            // let callback_shape = egui_wgpu::Callback::new_paint_callback(canvas_rect, render_callback);
-            // ui.painter().add(callback_shape);
         });
     }
 }

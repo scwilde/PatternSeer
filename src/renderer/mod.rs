@@ -1,29 +1,15 @@
-use std::any::TypeId;
-use eframe::{egui, egui_wgpu::{self, wgpu}};
-use glam::Vec2;
-use crate::{
-    camera::Camera,
-    pattern::Pattern,
-    renderer::{
-        mesh::Mesh,
-        geometry::{
-            Color,
-            Vertex
-        },
-    },
-};
+use eframe::egui_wgpu::{self, wgpu};
+use crate::renderer::mesh::Mesh;
 use std::borrow::Cow;
 
 mod geometry;
 mod mesh;
 pub mod grid_renderer;
-// mod render_utils;
 
 
 pub struct RenderContext<'a> {
     pub render_pipeline: wgpu::RenderPipeline,
     pub rendered_mesh: Mesh<'a>,
-    pub gpu_device: wgpu::Device,
 }
 
 pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
@@ -76,6 +62,5 @@ pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
     callback_resources.insert(RenderContext {
         render_pipeline,
         rendered_mesh,
-        gpu_device,
     });
 }

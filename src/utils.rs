@@ -1,5 +1,3 @@
-use bytemuck;
-use glam::{Vec2, Vec3};
 use std::cmp::PartialOrd;
 
 mod sealed {

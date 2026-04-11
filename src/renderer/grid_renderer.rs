@@ -1,5 +1,5 @@
 use eframe::{egui, egui_wgpu::{self, wgpu}};
-use glam::{Vec3, Vec2};
+use glam::Vec2;
 use crate::{
     camera::Camera,
     pattern::Pattern,
@@ -13,7 +13,6 @@ use crate::{
     },
     utils
 };
-use std::borrow::Cow;
 use std::any::TypeId;
 
 struct Gridline {
@@ -238,7 +237,7 @@ pub struct GridRendererCallback { }
 impl egui_wgpu::CallbackTrait for GridRendererCallback {
     fn prepare(
             &self,
-            device: &wgpu::Device,
+            _device: &wgpu::Device,
             queue: &wgpu::Queue,
             _screen_descriptor: &egui_wgpu::ScreenDescriptor,
             _egui_encoder: &mut wgpu::CommandEncoder,
@@ -261,7 +260,7 @@ impl egui_wgpu::CallbackTrait for GridRendererCallback {
             callback_resources: &egui_wgpu::CallbackResources
         ) {
         if let Some(render_context) = callback_resources.get::<RenderContext>() {
-            let (vertex_buffer, buffer_pos, vert_bytes) = render_context.rendered_mesh
+            let (vertex_buffer, buffer_pos, _vert_bytes) = render_context.rendered_mesh
                 .get(&TypeId::of::<Self>()).unwrap();
 
             render_pass.set_pipeline(&render_context.render_pipeline);
