@@ -1,33 +1,6 @@
 use bytemuck;
 use glam::{Vec2, Vec3};
-
-
-/// A single point in 2D space containing a position and color.
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable, PartialEq, Debug)]
-pub struct Vertex {
-    // TODO Replace with a Vec2 from a crate, prob numix
-    /// X and Y position of this vertex in space.
-    pub position: Vec2,
-    // TODO Replace with a Vec3 from a crate, prob numix
-    /// red, green, and blue color values of this vertex.
-    pub color: Vec3,
-}
-
-
-/// A triangle made up of 3 `Vertex`s.
-pub struct Triangle {
-    /// Vertices that make up this triangle.
-    pub vertices: [Vertex; 3]
-}
-
-
-#[derive(Clone, Copy)]
-pub enum Axis {
-    X,
-    Y,
-}
-
+use std::cmp::PartialOrd;
 
 /// Denotes a value that is processed somewhere else and should only be reprocessed if it has changed.
 /// In particular its useful for values that would be expensive to repeatedly `PartialEq` or `Clone`.
@@ -89,8 +62,7 @@ impl<T: Default> Volatile<T> {
         }
     }
 }
-impl<T: Default> Default for Volatile<T> 
-{
+impl<T: Default> Default for Volatile<T> {
     fn default() -> Self {
         Volatile::Clean(T::default())
     }
