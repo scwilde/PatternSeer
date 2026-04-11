@@ -3,9 +3,6 @@ use glam::{Vec2, Vec3};
 use crate::camera::Camera;
 use crate::pattern::Pattern;
 use crate::renderer::RenderContext;
-// use crate::grid_renderer::GridRenderer;
-use crate::utils::Volatile::{self, *};
-
 
 // mod grid_renderer;
 mod renderer;
@@ -16,7 +13,7 @@ mod pattern;
 /// An instance of the application.
 struct PatternSeer {
     /// The camera used for rendering.
-    camera: Volatile<Camera>,
+    camera: Camera,
     /// Container for the pattern we are currently working on.
     pattern: Pattern,
 }
@@ -34,7 +31,7 @@ impl PatternSeer {
         let camera = Camera::new(&pattern);
 
         PatternSeer {
-            camera: Dirty(camera),
+            camera,
             pattern,
         }
     }
@@ -50,27 +47,20 @@ impl eframe::App for PatternSeer {
 
             // Create our rendering canvas filling all available space
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
-            if self.camera.inner().viewport != Vec2::new(canvas_rect.width(), canvas_rect.height()) {
-                self.camera.dirty_with(|camera| camera.resize(canvas_rect.width(), canvas_rect.height(), &self.pattern));
-            }
+            self.camera.resize(canvas_rect.width(), canvas_rect.height());
 
             // Camera pan and zoom controls
             if canvas_response.dragged_by(egui::PointerButton::Secondary) {
-                self.camera.dirty_with(|camera| {
-                    camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y)
-                });
+                self.camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y);
             }
             if canvas_response.hovered() { 
                 let scroll_delta = ui.input(|i| i.smooth_scroll_delta);
                 if scroll_delta.y != 0.0 {
-                    self.camera.dirty_with(|camera| camera.zoom(scroll_delta.y));
+                    self.camera.zoom(scroll_delta.y);
                 }
             }
 
             // Render the canvas
-            self.camera.inner_mut().limit_pan(&self.pattern);
-            self.camera.inner_mut().limit_zoom(&self.pattern);
-
             render_context.rendered_mesh.clear();
             let grid = renderer::grid_renderer::render(render_context, &self.camera.inner(), &self.pattern);
             let grid_painter = egui_wgpu::Callback::new_paint_callback(canvas_rect, grid);
