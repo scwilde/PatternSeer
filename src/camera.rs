@@ -8,17 +8,23 @@ pub struct Camera {
     /// Camera position in world space.
     pub position: Vec2,
     // TODO Replace with some sort of structure accessed like `position_bounds.x.min`
-    /// The minimum and maximum position values so the user doesnt run away and lose the canvas.
+    /// The minimum and maximum camera position values so the user doesnt run away and lose the canvas.
     pub position_bounds: [[f32; 2]; 2],
     /// Camera viewport dimensions in logical pixels.
     pub viewport: Vec2,
     /// How many logical pixels between each single world space unit.
     pub zoom: f32,
-    /// The minimum and maximum zoom values.
+    /// The minimum and maximum zoom values to prevent rendering artefacts or bugs.
     pub zoom_bounds: [f32; 2],
 }
 
 impl Camera {
+    /// Create a new camera for the scene
+    /// 
+    /// # Parameters
+    /// 
+    /// - `pattern`: The pattern that this camera is intended to render.
+    ///     This is used to set the camera's initial position to the center of the pattern.
     pub fn new(pattern: &Pattern) -> Self{
         let pattern_width = pattern.stitched_dimensions[0] as f32;
         let pattern_height = pattern.stitched_dimensions[1] as f32;

@@ -3,11 +3,16 @@ use std::{any::TypeId, collections::HashMap};
 use eframe::egui_wgpu::wgpu;
 use crate::renderer::geometry;
 
+/// Contains information about a block of memory in a GPU vertex buffer.
 #[derive(Debug)]
 pub struct BufferPosition {
+    /// Offset of block from the start of the buffer in bytes.
     pub offset_bytes: u64,
+    /// Length of the block in bytes.
     pub len_bytes: u64,
+    /// Offset position of the block from the start of the buffer in vertices.
     pub offset_verts: u32,
+    /// Length of the block in vertices.
     pub len_verts: u32,
 }
 
@@ -77,6 +82,7 @@ impl Mesh {
         }
     }
 
+    /// Repeatedly doubles the allocated size of the vertex buffer until the geometry can fit cleanly inside it.
     pub fn extend_buffer(&mut self) {
         let mut reallocation_needed = false;
         while self.geometry_size as u64 > self.vertex_buffer_size {
@@ -96,6 +102,18 @@ impl Mesh {
         }
     }
 
+    /// Appends one or more vertices to the mesh.
+    /// 
+    /// # Parameters
+    /// 
+    /// - `bind_callback`: `RendererCallback` to bind to this block of vertices.
+    /// - `verts`: Slice of vertices to append to the mesh.
+    /// 
+    /// # Returns
+    /// 
+    /// `Result` that can be:
+    /// - `Ok(())`: When the vertices are appended without issue.
+    /// - `Err(String)`: If `bind_callback` has already been bound to a block of geometry.
     pub fn append_verts(
         &mut self,
         bind_callback: TypeId,
@@ -124,21 +142,36 @@ impl Mesh {
         Ok(())
     }
 
-    // pub fn append_tris(tris: &[geometry::Triangle]) {
+    pub fn append_tris(&mut self, bind_callback: TypeId, tris: &[geometry::Triangle]) -> Result<(), String> { todo!() }
 
-    // }
+    pub fn append_quads(&mut self, bind_callback: TypeId, quads: &[geometry::Quad]) -> Result<(), String> { todo!() }
 
-    // pub fn append_quads(quads: &[geometry::Quad]) {
-
-    // }
-
+    /// Gets a block of geometry and its buffer position from a bound `RendererCallback`'s `TypeID`.
+    /// 
+    /// # Parameters
+    /// 
+    /// - `bound_callback`: `RendererCallback` for which to check for bound geometry.
+    /// 
+    /// # Returns
+    /// 
+    /// `Option` which can be
+    /// - `None`: When the specified `RenderCallback` is not bound to any block of geometry.
+    /// - `Some`: When the specified `RenderCallback` is bound to geometry, the geometry will be returned in the form:
+    ///     (
+    ///         `vertex_buffer`: Vertex buffer where the geometry is to be stored.
+    ///         `buffer_position`: Offset and length of the geometry in the buffer.
+    ///         `vertex_bytes`: Slice containing all the bytes for this block of geometry.
+    ///     )
     pub fn get(&self, bound_callback: &TypeId) -> Option<(&wgpu::Buffer, &BufferPosition, &[u8])> {
         let (buffer_pos, bytes) = self.geometry.get(bound_callback)?;
         Some((&self.vertex_buffer, buffer_pos, bytes.as_slice()))
     }
 
+    /// Clears all stored geometry from the mesh. As its meant to be run at the beginning of each frame
+    /// it Keeps the previously allocated vertex buffer.
     pub fn clear(&mut self) {
         self.geometry.clear();
+        self.geometry_len = 0;
         self.geometry_size = 0;
     }
 }

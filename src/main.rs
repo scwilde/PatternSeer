@@ -17,7 +17,6 @@ struct PatternSeer {
     /// Container for the pattern we are currently working on.
     pattern: Pattern,
 }
-
 impl PatternSeer {
     /// Creates a new instance of PatternSeer.
     /// 
@@ -27,7 +26,7 @@ impl PatternSeer {
     fn new(cc: &eframe::CreationContext) -> Self {
         renderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
-        let pattern = Pattern { stitched_dimensions: Vec2::new(2000.0, 2000.0) };
+        let pattern = Pattern { stitched_dimensions: Vec2::new(20000.0, 20000.0) };
         let camera = Camera::new(&pattern);
 
         PatternSeer {
@@ -36,7 +35,6 @@ impl PatternSeer {
         }
     }
 }
-
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
         // Central UI pannel

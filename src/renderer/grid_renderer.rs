@@ -15,14 +15,29 @@ use crate::{
 };
 use std::any::TypeId;
 
+/// A quad representing a line in a grid.
 struct Gridline {
+    /// This `Gridline`'s position along its `Axis`.
     position: f32,
+    /// Minimum world space position of the pattern's edge, so the `Gridline` doesn't overflow the pattern.
     draw_min: f32,
+    /// Maximum world space position of the pattern's edge, so the `Gridline` doesn't overflow the pattern.
     draw_max: f32,
+    /// Thickness of this `Gridline`.
     weight: f32,
+    /// `Axis` long which this `Gridline` is placed, perpendicular to that which it points.
     axis: Axis,
 }
 impl Gridline {
+    /// Generates the clip space vertices of the `Gridline`.
+    /// 
+    /// # Parameters
+    /// 
+    /// - `camera`: The camera whos positions and viewport are used to calculate clip space.
+    /// 
+    /// # Returns
+    /// 
+    /// 6 black vertices, which make up two black triangles, which make up the quad for this `Gridline`.
     fn draw(&self, camera: &Camera) -> [Vertex; 6] {
         match self.axis {
             Axis::X => {
@@ -127,6 +142,18 @@ struct GridlineIter {
     done: bool,
 }
 impl GridlineIter {
+    /// Creates a new `GridlineIter`.
+    /// 
+    /// # Parameters
+    /// 
+    /// - `render_min`: Minimum world space gridline to draw.
+    /// - `render_max`: Maximum world space gridline to draw.
+    /// - `pll_pattern_min`: Min world space position of pattern's edge parallel to axis.
+    /// - `pll_pattern_max`: Max world space position of pattern's edge parallel to axis.
+    /// - `prp_pattern_min`: Min world space position of pattern's edge perpendicular to axis.
+    /// - `prp_pattern_max`: Max world space position of pattern's edge perpendicular to axis.
+    /// - `step`: How many world space units between each gridline.
+    /// - `axis`: Axis alongw hich to distribute gridlines.
     fn new(
         render_min: f32,
         render_max: f32,
@@ -190,11 +217,16 @@ impl Iterator for GridlineIter {
 /// 
 /// # Parameters
 /// 
-/// * `pattern` - The pattern whos dimensions are used to generate the grid.
-/// * `camera` - The camera rendering our pattern.
-/// * `frame` - Information about the current egui frame. We use it to get access to `callback_resources`.
+/// - `pattern`: The pattern whos dimensions are used to generate the grid.
+/// - `camera`: The camera rendering our pattern.
+/// - `frame`: Information about the current egui frame. We use it to get access to `callback_resources`.
+/// 
+/// # Returns
+/// 
+/// `GridRenderCallback` to be passed back to `egui_wgpu::Callback::new_paint_callback()`.
 pub fn render(render_context: &mut RenderContext, camera: &Camera, pattern: &Pattern) -> GridRendererCallback {
     let mut verts = vec![];
+    // Start by filling background with a white rectangle.
     verts.extend(&[
         Vertex { position: Vec2::new(-1.0,  1.0), color: Color::WHITE },
         Vertex { position: Vec2::new( 1.0,  1.0), color: Color::WHITE },
@@ -204,9 +236,10 @@ pub fn render(render_context: &mut RenderContext, camera: &Camera, pattern: &Pat
         Vertex { position: Vec2::new(-1.0, -1.0), color: Color::WHITE },
     ]);
 
+    // Calculate grid LoD level based on camera zoom.
     let grid_step = 10.0_f32.powi((((5.0 / camera.zoom).log10() + 1.0).floor() as i32).max(0));
 
-    // // Calculate min and max grid positions
+    // Create iterators for gridlines currently in view.
     let x_grids = GridlineIter::new(
         (camera.position[0] - (camera.viewport[0] / (2.0 * camera.zoom))).ceil(),
         (camera.position[0] + (camera.viewport[0] / (2.0 * camera.zoom))).floor(),
@@ -228,10 +261,10 @@ pub fn render(render_context: &mut RenderContext, camera: &Camera, pattern: &Pat
         Axis::Y,
     );
 
+    // Iterate over all gridlines in view.
     for x_line in x_grids {
         verts.extend(x_line.draw(camera));
     }
-
     for y_line in y_grids {
         verts.extend(y_line.draw(camera));
     }

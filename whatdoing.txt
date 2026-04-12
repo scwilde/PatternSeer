@@ -4,9 +4,9 @@
 --- Current Work ---
 
 -[] Housekeeping
-    -[] Remove leftovers from old API
-    -[] Update documentation
-    -[] Clean up variable and field names
+    -[X] Remove leftovers from old API
+    -[X] Update documentation
+    -[X] Clean up variable and field names
     -[] Utility for handling bounds
 -[] geometry API
     -[X] Colors

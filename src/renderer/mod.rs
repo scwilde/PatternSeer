@@ -13,6 +13,12 @@ pub struct RenderContext {
     pub rendered_mesh: Mesh,
 }
 
+/// Initializes the `RenderContext` object inside of `callback_resources`.
+/// 
+/// # Parameters
+/// 
+/// - `wgpu_render_state`: Render state of wgpu. 
+/// Provides the GPU device for the mesh and the reference to `callback_resources` to bind `RenderContext`.
 pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
     const MAIN_SHADER: &str = include_str!("shaders/main_shader.wgsl");
     let callback_resources = &mut wgpu_render_state.renderer.write().callback_resources;
