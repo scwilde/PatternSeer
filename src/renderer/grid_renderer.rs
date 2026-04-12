@@ -103,38 +103,49 @@ impl Gridline {
     }
 }
 
+/// An iterator which generates all `Gridline`s along an axis between two world space positions.
 struct GridlineIter {
+    /// Minimum gridline this iterator will draw.
     working_min: f32,
+    /// Maximum gridline this iterator will draw.
     working_max: f32,
-    grid_min: f32,
-    grid_max: f32,
-    draw_min: f32,
-    draw_max: f32,
+    /// `pll_pattern_min`: Min world space position of pattern's edge parallel to axis.
+    pll_pattern_min: f32,
+    /// `pll_pattern_max`: Max world space position of pattern's edge parallel to axis.
+    pll_pattern_max: f32,
+    /// `prp_pattern_min`: Min world space position of pattern's edge perpendicular to axis.
+    prp_pattern_min: f32,
+    /// `prp_pattern_max`: Max world space position of pattern's edge perpendicular to axis.
+    prp_pattern_max: f32,
+    /// How many world position units between each gridline.
     step: f32,
-    curr: f32,
+    /// World position of the next `Gridline` to generate.
+    next: f32,
+    /// `Axis` along which to disperse the `Gridline`s.
     axis: Axis,
+    /// Have we drawn the final `Gridline`?
     done: bool,
 }
 impl GridlineIter {
     fn new(
         render_min: f32,
         render_max: f32,
-        grid_min: f32,
-        grid_max: f32,
-        draw_min: f32,
-        draw_max: f32,
+        pll_pattern_min: f32,
+        pll_pattern_max: f32,
+        prp_pattern_min: f32,
+        prp_pattern_max: f32,
         step: f32,
         axis: Axis,
     ) -> Self {
         Self {
-            working_min: utils::maxf(render_min, grid_min),
-            working_max: utils::minf(render_max, grid_max),
-            grid_min,
-            grid_max,
-            draw_min,
-            draw_max,
+            working_min: utils::maxf(render_min, pll_pattern_min),
+            working_max: utils::minf(render_max, pll_pattern_max),
+            pll_pattern_min,
+            pll_pattern_max,
+            prp_pattern_min,
+            prp_pattern_max,
             step,
-            curr: utils::maxf(render_min, grid_min),
+            next: utils::maxf(render_min, pll_pattern_min),
             axis,
             done: false,
         }
@@ -147,15 +158,15 @@ impl Iterator for GridlineIter {
         if self.done {
             return None;
         }
-        if self.curr == self.working_min {
-            self.curr -= self.curr % self.step;
+        if self.next == self.working_min {
+            self.next -= self.next % self.step;
         }
-        let position = self.curr;
-        self.curr += self.step;
-        self.curr = self.curr.min(self.working_max);
+        let position = self.next;
+        self.next += self.step;
+        self.next = self.next.min(self.working_max);
 
         let weight = match position {
-            p if p == self.grid_min || p == self.grid_max => 5.0,
+            p if p == self.pll_pattern_min || p == self.pll_pattern_max => 5.0,
             p if p % (100.0 * self.step) == 0.0 => 5.0,
             p if p % (10.0 * self.step) == 0.0 => 3.0,
             _ => 1.0,
@@ -166,8 +177,8 @@ impl Iterator for GridlineIter {
         }
         Some(Gridline {
             position,
-            draw_min: self.draw_min,
-            draw_max: self.draw_max,
+            draw_min: self.prp_pattern_min,
+            draw_max: self.prp_pattern_max,
             weight,
             axis: self.axis,
         })
@@ -257,7 +268,7 @@ impl egui_wgpu::CallbackTrait for GridRendererCallback {
             &self,
             _info: egui::PaintCallbackInfo,
             render_pass: &mut wgpu::RenderPass<'static>,
-            callback_resources: &egui_wgpu::CallbackResources
+            callback_resources: &egui_wgpu::CallbackResources,
         ) {
         if let Some(render_context) = callback_resources.get::<RenderContext>() {
             let (vertex_buffer, buffer_pos, _vert_bytes) = render_context.rendered_mesh
