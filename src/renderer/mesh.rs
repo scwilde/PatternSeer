@@ -11,17 +11,34 @@ pub struct BufferPosition {
     pub len_verts: u32,
 }
 
-pub struct Mesh<'a> {
+/// A 2D mesh of rendered geometry.
+/// Keeps track of blocks of geometry for ordered rendering.
+/// Also manages the attached GPU buffer and ensures it is large enough for all needed geometry.
+pub struct Mesh {
+    /// GPU device on which the vertex buffer is allocated.
     gpu_device: wgpu::Device,
+    /// Allocated vertex buffer.
     vertex_buffer: wgpu::Buffer,
-    pub vertex_buffer_layout: wgpu::VertexBufferLayout<'a>,
+    /// Layout of the vertex buffer's bytes and how they should be enterpreted as vertices.
+    pub vertex_buffer_layout: wgpu::VertexBufferLayout<'static>,
+    /// Number of bytes currently allocated to our vertex buffer.
     vertex_buffer_size: u64,
+    /// All the geometry in the mesh. This is a `HashMap` which binds the type ID of a `RendererCallback`
+    /// to a `Vec` of bytes as well as the position of that chunk of bytes in the vertex buffer.
     geometry: HashMap<TypeId, (BufferPosition, Vec<u8>)>,
+    /// Number of vertices stored in the geometry.
     geometry_len: usize,
+    /// Number of total bytes in the geometry.
     geometry_size: usize,
 }
 
-impl<'a> Mesh<'a> {
+impl Mesh {
+    /// Creates a new `Mesh` instance
+    /// 
+    /// # Parameters
+    /// 
+    /// - `gpu_device`: GPU device to allocate a vertex buffer on.
+    /// - `initial_size`: Initial size to allocate for the vertex buffer.
     pub fn new(gpu_device: &wgpu::Device, initial_size: u64) -> Self {
         let vertex_buffer = gpu_device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Mesh vertex buffer"),
@@ -65,9 +82,9 @@ impl<'a> Mesh<'a> {
         while self.geometry_size as u64 > self.vertex_buffer_size {
             reallocation_needed = true;
             self.vertex_buffer_size *= 2;
-            println!("Vertex buffer exceeded, extending buffer to {} bytes", self.vertex_buffer_size);
         }
         if reallocation_needed {
+            println!("Vertex buffer exceeded, extending buffer to {} bytes", self.vertex_buffer_size);
             let new_vertex_buffer = self.gpu_device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Mesh vertex buffer"),
                 size: self.vertex_buffer_size,

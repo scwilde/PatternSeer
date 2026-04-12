@@ -7,9 +7,10 @@ mod mesh;
 pub mod grid_renderer;
 
 
-pub struct RenderContext<'a> {
+/// An object containing the render pipeline and mesh for drawing to the screen.
+pub struct RenderContext {
     pub render_pipeline: wgpu::RenderPipeline,
-    pub rendered_mesh: Mesh<'a>,
+    pub rendered_mesh: Mesh,
 }
 
 pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
