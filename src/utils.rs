@@ -35,14 +35,30 @@ pub fn maxf<F: sealed::Float + PartialOrd>(a: F, b: F) -> F  {
 
 /// Object for storing a minimum and maximum value.
 #[derive(Default, Debug)]
-pub struct Bounds<T: PartialOrd> {
+pub struct Bounds<T> 
+where
+    T: PartialOrd + Clone + Copy
+{
     pub min: T,
     pub max: T,
 }
 
 /// Object for storing a minimum and maximum position in 2D space.
 #[derive(Default, Debug)]
-pub struct Bounds2d<T: PartialOrd> {
+pub struct Bounds2d<T>
+where
+    T: PartialOrd + Clone + Copy
+{
     pub x: Bounds<T>,
     pub y: Bounds<T>,
+}
+
+pub fn bounds2d<T>(bb: [[T; 2]; 2]) -> Bounds2d<T>
+where
+    T: PartialOrd + Clone + Copy
+{
+    Bounds2d {
+        x: Bounds { min: bb[0][0], max: bb[0][1] },
+        y: Bounds { min: bb[1][0], max: bb[1][0] },
+    }
 }

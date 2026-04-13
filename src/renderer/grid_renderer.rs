@@ -6,7 +6,10 @@ use crate::{
     renderer::{
         RenderContext,
         geometry::{
-            Axis, Color, Vertex
+            Axis,
+            Color,
+            Vertex,
+            Quad,
         },
     },
     utils,
@@ -34,7 +37,7 @@ impl Gridline {
     /// # Returns
     /// 
     /// 6 black vertices, which make up two black triangles, which make up the quad for this `Gridline`.
-    fn draw(&self, camera: &Camera) -> [Vertex; 6] {
+    fn draw(&self, camera: &Camera) -> Quad {
         match self.axis {
             Axis::X => {
                 let x_clip = ((self.position - camera.position.x) * camera.zoom) / (camera.viewport.x / 2.0);
@@ -46,34 +49,13 @@ impl Gridline {
                 let corner_fix = (self.weight / 4.0) / (camera.viewport.x / 2.0);
                 let draw_color = Color::BLACK;
 
-                [
-                    // Top right
-                    Vertex {
-                        position: Vec2::new(x_clip - weight / 2.0, endpoints_clip.max + corner_fix),
-                        color: draw_color,
-                    },
-                    Vertex {
-                        position: Vec2::new(x_clip + weight / 2.0, endpoints_clip.max + corner_fix),
-                        color: draw_color,
-                    },
-                    Vertex {
-                        position: Vec2::new(x_clip + weight / 2.0, endpoints_clip.min - corner_fix),
-                        color: draw_color,
-                    },
-                    //Bottom left
-                    Vertex {
-                        position: Vec2::new(x_clip - weight / 2.0, endpoints_clip.max + corner_fix),
-                        color: draw_color,
-                    },
-                    Vertex {
-                        position: Vec2::new(x_clip + weight / 2.0, endpoints_clip.min - corner_fix),
-                        color: draw_color,
-                    },
-                    Vertex {
-                        position: Vec2::new(x_clip - weight / 2.0, endpoints_clip.min - corner_fix),
-                        color: draw_color,
-                    },
-                ]
+                Quad::from_bb(
+                    utils::bounds2d([
+                        [x_clip - weight / 2.0, x_clip + weight / 2.0],
+                        [endpoints_clip.min - corner_fix, endpoints_clip.max + corner_fix],
+                    ]),
+                    Color::BLACK,
+                )
             },
             Axis::Y => {
                 let y_clip = ((self.position - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0);
@@ -85,34 +67,13 @@ impl Gridline {
                 let corner_fix = (self.weight / 4.0) / (camera.viewport.y / 2.0);
                 let draw_color = Color::BLACK;
 
-                [
-                    // Top right
-                    Vertex{
-                        position: Vec2::new(endpoints_clip.min - corner_fix, y_clip + weight / 2.0),
-                        color: draw_color,
-                    },
-                    Vertex{
-                        position: Vec2::new(endpoints_clip.max + corner_fix, y_clip + weight / 2.0),
-                        color: draw_color,
-                    },
-                    Vertex{
-                        position: Vec2::new(endpoints_clip.max + corner_fix, y_clip - weight / 2.0),
-                        color: draw_color,
-                    },
-                    //Bottom left
-                    Vertex{
-                        position: Vec2::new(endpoints_clip.min - corner_fix, y_clip + weight / 2.0),
-                        color: draw_color,
-                    },
-                    Vertex{
-                        position: Vec2::new(endpoints_clip.max + corner_fix, y_clip - weight / 2.0),
-                        color: draw_color,
-                    },
-                    Vertex{
-                        position: Vec2::new(endpoints_clip.min - corner_fix, y_clip - weight / 2.0),
-                        color: draw_color,
-                    },
-                ]
+                Quad::from_bb(
+                    utils::bounds2d([
+                        [endpoints_clip.min - corner_fix, endpoints_clip.max + corner_fix],
+                        [y_clip - weight / 2.0, y_clip + weight / 2.0],
+                    ]),
+                    Color::BLACK,
+                )
             }
         }
     }
@@ -210,16 +171,12 @@ impl Iterator for GridlineIter {
 /// 
 /// `GridRenderCallback` to be passed back to `egui_wgpu::Callback::new_paint_callback()`.
 pub fn render(render_context: &mut RenderContext, camera: &Camera, pattern: &Pattern) -> GridRendererCallback {
-    let mut verts = vec![];
+    let mut geom = vec![];
     // Start by filling background with a white rectangle.
-    verts.extend(&[
-        Vertex { position: Vec2::new(-1.0,  1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new( 1.0,  1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new( 1.0, -1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new(-1.0,  1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new( 1.0, -1.0), color: Color::WHITE },
-        Vertex { position: Vec2::new(-1.0, -1.0), color: Color::WHITE },
-    ]);
+    geom.push(Quad::from_bb(
+        utils::bounds2d([[-1.0, 1.0], [-1.0, 1.0]]),
+        Color::WHITE
+    ));
 
     // Calculate grid LoD level based on camera zoom.
     let grid_step = 10.0_f32.powi((((5.0 / camera.zoom).log10() + 1.0).floor() as i32).max(0));
@@ -228,31 +185,27 @@ pub fn render(render_context: &mut RenderContext, camera: &Camera, pattern: &Pat
     let x_grids = GridlineIter::new(
         (camera.position[0] - (camera.viewport.x / (2.0 * camera.zoom))).ceil(),
         (camera.position[0] + (camera.viewport.x / (2.0 * camera.zoom))).floor(),
-        Axis::X, grid_step,
-        utils::Bounds2d {
-            x: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.x },
-            y: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.y },
-        }
+        Axis::X,
+        grid_step,
+        utils::bounds2d([[0.0, pattern.stitched_dimensions.x], [0.0, pattern.stitched_dimensions.y]]),
     );
     let y_grids = GridlineIter::new(
         (camera.position[1] - (camera.viewport.y / (2.0 * camera.zoom))).ceil(),
         (camera.position[1] + (camera.viewport.y / (2.0 * camera.zoom))).floor(),
-        Axis::Y, grid_step,
-        utils::Bounds2d {
-            x: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.y },
-            y: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.x },
-        }
+        Axis::Y,
+        grid_step,
+        utils::bounds2d([[0.0, pattern.stitched_dimensions.y], [0.0, pattern.stitched_dimensions.x]]),
     );
 
     // Iterate over all gridlines in view.
-    for x_line in x_grids {
-        verts.extend(x_line.draw(camera));
-    }
-    for y_line in y_grids {
-        verts.extend(y_line.draw(camera));
-    }
+    // for x_line in x_grids {
+    //     geom.push(x_line.draw(camera));
+    // }
+    // for y_line in y_grids {
+    //     geom.push(y_line.draw(camera));
+    // }
 
-    render_context.rendered_mesh.append_verts(TypeId::of::<GridRendererCallback>(), verts.as_slice())
+    render_context.rendered_mesh.append_quads(TypeId::of::<GridRendererCallback>(), geom.as_slice())
         .expect("Double dipping memory");
 
     GridRendererCallback {  }

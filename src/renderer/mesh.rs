@@ -102,6 +102,35 @@ impl Mesh {
         }
     }
 
+    fn append_bytes(
+        &mut self,
+        bind_callback: TypeId,
+        bytes: &[u8],
+        num_verts: usize,
+    ) -> Result<(), String> {
+        if self.geometry.contains_key(&bind_callback) {
+            return Err(format!("The callback type {:?} is already bound to another block of geometry", bind_callback))
+        }
+
+        self.geometry.insert(bind_callback, (
+            BufferPosition {
+                offset_bytes: self.geometry_size as u64,
+                len_bytes: bytes.len() as u64,
+                offset_verts: self.geometry_len.try_into().expect(""),
+                len_verts: num_verts.try_into().expect(""),
+            },
+            bytes.to_vec(),
+        ));
+        self.geometry_size += bytes.len();
+        self.geometry_len += num_verts;
+
+        if self.geometry_size as u64 > self.vertex_buffer_size {
+            self.extend_buffer();
+        }
+
+        Ok(())
+    }
+
     /// Appends one or more vertices to the mesh.
     /// 
     /// # Parameters
@@ -114,37 +143,23 @@ impl Mesh {
     /// `Result` that can be:
     /// - `Ok(())`: When the vertices are appended without issue.
     /// - `Err(String)`: If `bind_callback` has already been bound to a block of geometry.
-    pub fn append_verts(
-        &mut self,
-        bind_callback: TypeId,
-        verts: &[geometry::Vertex],
-    ) -> Result<(), String> {
-        if self.geometry.contains_key(&bind_callback) {
-            return Err(format!("The callback type {:?} is already bound to another block of geometry", bind_callback))
-        }
-        
-        let newbytes: Vec<u8> = bytemuck::cast_slice(verts).to_vec();
-        let newbytes_len = newbytes.len();
-        self.geometry.insert(bind_callback, (
-            BufferPosition {
-                offset_bytes: self.geometry_size as u64,
-                len_bytes: newbytes_len as u64,
-                offset_verts: self.geometry_len.try_into().expect(""),
-                len_verts: verts.len().try_into().expect(""),
-            },
-            newbytes
-        ));
-        self.geometry_size += newbytes_len;
+    pub fn append_verts(&mut self, bind_callback: TypeId, verts: &[geometry::Vertex]) -> Result<(), String> {
+        let newbytes: &[u8] = bytemuck::cast_slice(verts);
+        self.append_bytes(bind_callback, newbytes, verts.len())?;
 
-        if self.geometry_size as u64 > self.vertex_buffer_size {
-            self.extend_buffer();
-        }
         Ok(())
     }
 
-    pub fn append_tris(&mut self, bind_callback: TypeId, tris: &[geometry::Triangle]) -> Result<(), String> { todo!() }
+    pub fn append_tris(&mut self, bind_callback: TypeId, tris: &[geometry::Triangle]) -> Result<(), String> {
+        todo!()
+    }
 
-    pub fn append_quads(&mut self, bind_callback: TypeId, quads: &[geometry::Quad]) -> Result<(), String> { todo!() }
+    pub fn append_quads(&mut self, bind_callback: TypeId, quads: &[geometry::Quad]) -> Result<(), String> {
+        let newbytes: &[u8] = bytemuck::cast_slice(quads);
+        self.append_bytes(bind_callback, newbytes, quads.len() * 6)?;
+
+        Ok(())
+    }
 
     /// Gets a block of geometry and its buffer position from a bound `RendererCallback`'s `TypeID`.
     /// 

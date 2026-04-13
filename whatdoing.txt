@@ -3,22 +3,15 @@
 
 --- Current Work ---
 
--[X] Housekeeping
-    -[X] Remove leftovers from old API
-    -[X] Update documentation
-    -[X] Clean up variable and field names
-    -[X] Utility for handling bounds
 -[] geometry API
     -[X] Colors
     -[X] verts
     -[] quads
     -[] tris
--[] Move the zoom level calculation into the camera and then call it each time the camera zooms only
 
 -- Pattern loading -- 
 
 Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
-actually this should just be a match statement ^
 
 -[] Design DB with 64x64 base tiles and mip map tiles up to level 6 (2048x2048 tiles)
 -[] LRU cache that can accept 1024 64x64 textures tiles, about 12Mb of ram tops
