@@ -32,3 +32,17 @@ pub fn maxf<F: sealed::Float + PartialOrd>(a: F, b: F) -> F  {
     else if a > b { a } 
     else { b }
 }
+
+/// Object for storing a minimum and maximum value.
+#[derive(Default, Debug)]
+pub struct Bounds<T: PartialOrd> {
+    pub min: T,
+    pub max: T,
+}
+
+/// Object for storing a minimum and maximum position in 2D space.
+#[derive(Default, Debug)]
+pub struct Bounds2d<T: PartialOrd> {
+    pub x: Bounds<T>,
+    pub y: Bounds<T>,
+}

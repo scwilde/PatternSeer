@@ -46,6 +46,7 @@ impl eframe::App for PatternSeer {
             // Create our rendering canvas filling all available space
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
             self.camera.resize(canvas_rect.width(), canvas_rect.height());
+            // self.camera.resize(426.0, 240.0);
 
             // Camera pan and zoom controls
             if canvas_response.dragged_by(egui::PointerButton::Secondary) {

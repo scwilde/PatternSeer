@@ -3,14 +3,13 @@
 
 --- Current Work ---
 
--[] Housekeeping
+-[X] Housekeeping
     -[X] Remove leftovers from old API
     -[X] Update documentation
     -[X] Clean up variable and field names
-    -[] Utility for handling bounds
+    -[X] Utility for handling bounds
 -[] geometry API
     -[X] Colors
-    -[] positions
     -[X] verts
     -[] quads
     -[] tris
@@ -18,11 +17,36 @@
 
 -- Pattern loading -- 
 
+Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
+actually this should just be a match statement ^
+
+-[] Design DB with 64x64 base tiles and mip map tiles up to level 6 (2048x2048 tiles)
+-[] LRU cache that can accept 1024 64x64 textures tiles, about 12Mb of ram tops
+    -[] Each frame calculate which tiles are currently in view and which zoom level we need
+    -[] Pull any tiles not in the cache in from the DB
+    -[] Each frame, all tiles in cache not in the current view should have an age value incremented
+    -[] If the cache has exceeded its threshold, boot all the oldest entries until cache is satisfied
+            These last two should really be done with an LinkedHashMap, however that requires a linked list which 
+            requires writing unsafe code.
+-[] When a base tile is marked as dirty, propagate that staleness upwards
+-[] When a tile is marked as stale, recursively regenerate its anchestor tiles as needed
+
 -[] Add ability to load a pattern from an SQLite DB
     -[] Pattern should be divided into 64x64 tiles
     -[] We need a cache of tiles currently in view
-        - What do we do when the entie canvas is in view? We don't want to load every single tile, do we?
+        - What do we do when the entire canvas is in view? We don't want to load every single tile, do we?
           - Nope, we do not; My guestimate is that that would be about 1.5 Gb of ram with a max canvas size of 10k x 10k
+          - Potential solution: Each frame calculate which tiles would be in view. Any tiles missing from view are
+            are pulled in from SQLite. Additionally, track which tiles are not in view and mark those with some staleness
+            value that increments each frame they are out of view. We will keep track of the size of the cache and if loading
+            new tiles exceeds some threshold then we will repreatedly drop the oldest tiles until the cache threshold is
+            satisfied.
+            Also, when we do the check for which tiles are on screen, a query should be done that returns any tiles on
+            screen that have been marked dirty in SQLite, meaning they have been changed by recent edits. These tiles
+            should be immediately dropped from the cache and reloaded.
+            This needs to be really really fast; 16.67 ms is how long we have between frames so we need to complete all these
+            queries *AND* get the textures rendered and into the pipeline within that timeframe. Though dropping can be done in
+            its own time, as can the actual writes to the database.
 
 -- Pattern rendering (easy ?)
 

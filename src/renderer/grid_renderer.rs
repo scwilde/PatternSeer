@@ -6,26 +6,22 @@ use crate::{
     renderer::{
         RenderContext,
         geometry::{
-            Vertex,
-            Color,
-            Axis,
+            Axis, Color, Vertex
         },
     },
-    utils
+    utils,
 };
 use std::any::TypeId;
 
 /// A quad representing a line in a grid.
 struct Gridline {
-    /// This `Gridline`'s position along its `Axis`.
+    /// This gridline's world space position along its axis.
     position: f32,
-    /// Minimum world space position of the pattern's edge, so the `Gridline` doesn't overflow the pattern.
-    draw_min: f32,
-    /// Maximum world space position of the pattern's edge, so the `Gridline` doesn't overflow the pattern.
-    draw_max: f32,
-    /// Thickness of this `Gridline`.
+    /// Minimum and maximum world space positions of the gridline's endpoints to prevent overrunning the pattern.
+    endpoints: utils::Bounds<f32>,
+    /// Thickness of this gridline.
     weight: f32,
-    /// `Axis` long which this `Gridline` is placed, perpendicular to that which it points.
+    /// Axis long which this gridline is placed, perpendicular to that which it points.
     axis: Axis,
 }
 impl Gridline {
@@ -42,8 +38,10 @@ impl Gridline {
         match self.axis {
             Axis::X => {
                 let x_clip = ((self.position - camera.position.x) * camera.zoom) / (camera.viewport.x / 2.0);
-                let draw_min_clip = ((self.draw_min - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0);
-                let draw_max_clip = ((self.draw_max - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0);
+                let endpoints_clip = utils::Bounds {
+                    min: ((self.endpoints.min - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0),
+                    max: ((self.endpoints.max - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0),
+                };
                 let weight = self.weight / (camera.viewport.x / 2.0);
                 let corner_fix = (self.weight / 4.0) / (camera.viewport.x / 2.0);
                 let draw_color = Color::BLACK;
@@ -51,65 +49,67 @@ impl Gridline {
                 [
                     // Top right
                     Vertex {
-                        position: Vec2::new(x_clip - weight / 2.0, draw_max_clip + corner_fix),
+                        position: Vec2::new(x_clip - weight / 2.0, endpoints_clip.max + corner_fix),
                         color: draw_color,
                     },
                     Vertex {
-                        position: Vec2::new(x_clip + weight / 2.0, draw_max_clip + corner_fix),
+                        position: Vec2::new(x_clip + weight / 2.0, endpoints_clip.max + corner_fix),
                         color: draw_color,
                     },
                     Vertex {
-                        position: Vec2::new(x_clip + weight / 2.0, draw_min_clip - corner_fix),
+                        position: Vec2::new(x_clip + weight / 2.0, endpoints_clip.min - corner_fix),
                         color: draw_color,
                     },
                     //Bottom left
                     Vertex {
-                        position: Vec2::new(x_clip - weight / 2.0, draw_max_clip + corner_fix),
+                        position: Vec2::new(x_clip - weight / 2.0, endpoints_clip.max + corner_fix),
                         color: draw_color,
                     },
                     Vertex {
-                        position: Vec2::new(x_clip + weight / 2.0, draw_min_clip - corner_fix),
+                        position: Vec2::new(x_clip + weight / 2.0, endpoints_clip.min - corner_fix),
                         color: draw_color,
                     },
                     Vertex {
-                        position: Vec2::new(x_clip - weight / 2.0, draw_min_clip - corner_fix),
+                        position: Vec2::new(x_clip - weight / 2.0, endpoints_clip.min - corner_fix),
                         color: draw_color,
                     },
                 ]
             },
             Axis::Y => {
-                let y_clip = ((self.position - camera.position[1]) * camera.zoom) / (camera.viewport[1] / 2.0);
-                let draw_min_clip = ((self.draw_min - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
-                let draw_max_clip = ((self.draw_max - camera.position[0]) * camera.zoom) / (camera.viewport[0] / 2.0);
-                let weight = self.weight / (camera.viewport[1] / 2.0);
+                let y_clip = ((self.position - camera.position.y) * camera.zoom) / (camera.viewport.y / 2.0);
+                let endpoints_clip = utils::Bounds {
+                    min: ((self.endpoints.min - camera.position.x) * camera.zoom) / (camera.viewport.x / 2.0),
+                    max: ((self.endpoints.max - camera.position.x) * camera.zoom) / (camera.viewport.x / 2.0),
+                };
+                let weight = self.weight / (camera.viewport.y / 2.0);
                 let corner_fix = (self.weight / 4.0) / (camera.viewport.y / 2.0);
                 let draw_color = Color::BLACK;
 
                 [
                     // Top right
                     Vertex{
-                        position: Vec2::new(draw_min_clip - corner_fix, y_clip + weight / 2.0),
+                        position: Vec2::new(endpoints_clip.min - corner_fix, y_clip + weight / 2.0),
                         color: draw_color,
                     },
                     Vertex{
-                        position: Vec2::new(draw_max_clip + corner_fix, y_clip + weight / 2.0),
+                        position: Vec2::new(endpoints_clip.max + corner_fix, y_clip + weight / 2.0),
                         color: draw_color,
                     },
                     Vertex{
-                        position: Vec2::new(draw_max_clip + corner_fix, y_clip - weight / 2.0),
+                        position: Vec2::new(endpoints_clip.max + corner_fix, y_clip - weight / 2.0),
                         color: draw_color,
                     },
                     //Bottom left
                     Vertex{
-                        position: Vec2::new(draw_min_clip - corner_fix, y_clip + weight / 2.0),
+                        position: Vec2::new(endpoints_clip.min - corner_fix, y_clip + weight / 2.0),
                         color: draw_color,
                     },
                     Vertex{
-                        position: Vec2::new(draw_max_clip + corner_fix, y_clip - weight / 2.0),
+                        position: Vec2::new(endpoints_clip.max + corner_fix, y_clip - weight / 2.0),
                         color: draw_color,
                     },
                     Vertex{
-                        position: Vec2::new(draw_min_clip - corner_fix, y_clip - weight / 2.0),
+                        position: Vec2::new(endpoints_clip.min - corner_fix, y_clip - weight / 2.0),
                         color: draw_color,
                     },
                 ]
@@ -120,18 +120,12 @@ impl Gridline {
 
 /// An iterator which generates all `Gridline`s along an axis between two world space positions.
 struct GridlineIter {
-    /// Minimum gridline this iterator will draw.
-    working_min: f32,
-    /// Maximum gridline this iterator will draw.
-    working_max: f32,
-    /// `pll_pattern_min`: Min world space position of pattern's edge parallel to axis.
-    pll_pattern_min: f32,
-    /// `pll_pattern_max`: Max world space position of pattern's edge parallel to axis.
-    pll_pattern_max: f32,
-    /// `prp_pattern_min`: Min world space position of pattern's edge perpendicular to axis.
-    prp_pattern_min: f32,
-    /// `prp_pattern_max`: Max world space position of pattern's edge perpendicular to axis.
-    prp_pattern_max: f32,
+    /// Minimum gridline in world space to draw along axis.
+    min: f32,
+    /// Maximum gridline in world space to draw along axis.
+    max: f32,
+    /// 2D bounding box of pattern in world space. `x` is parallel to `axis`, `y` is perpendicular.
+    pattern_bb: utils::Bounds2d<f32>,
     /// How many world position units between each gridline.
     step: f32,
     /// World position of the next `Gridline` to generate.
@@ -146,33 +140,24 @@ impl GridlineIter {
     /// 
     /// # Parameters
     /// 
-    /// - `render_min`: Minimum world space gridline to draw.
-    /// - `render_max`: Maximum world space gridline to draw.
-    /// - `pll_pattern_min`: Min world space position of pattern's edge parallel to axis.
-    /// - `pll_pattern_max`: Max world space position of pattern's edge parallel to axis.
-    /// - `prp_pattern_min`: Min world space position of pattern's edge perpendicular to axis.
-    /// - `prp_pattern_max`: Max world space position of pattern's edge perpendicular to axis.
-    /// - `step`: How many world space units between each gridline.
+    /// - `min`: Minimum gridline in world space to draw along axis.
+    /// - `max`: Maximum gridline in world space to draw along axis.
     /// - `axis`: Axis alongw hich to distribute gridlines.
+    /// - `step`: How many world space units between each gridline.
+    /// - `pll_pattern_min`: 2D bounding box of pattern in world space. `x` is parallel to `axis`, `y` is perpendicular.
     fn new(
-        render_min: f32,
-        render_max: f32,
-        pll_pattern_min: f32,
-        pll_pattern_max: f32,
-        prp_pattern_min: f32,
-        prp_pattern_max: f32,
-        step: f32,
+        min: f32,
+        max: f32,
         axis: Axis,
+        step: f32,
+        pattern_bb: utils::Bounds2d<f32>,
     ) -> Self {
         Self {
-            working_min: utils::maxf(render_min, pll_pattern_min),
-            working_max: utils::minf(render_max, pll_pattern_max),
-            pll_pattern_min,
-            pll_pattern_max,
-            prp_pattern_min,
-            prp_pattern_max,
+            min: utils::maxf(min, pattern_bb.x.min),
+            max: utils::minf(max, pattern_bb.x.max),
             step,
-            next: utils::maxf(render_min, pll_pattern_min),
+            next: utils::maxf(min, pattern_bb.x.min),
+            pattern_bb,
             axis,
             done: false,
         }
@@ -185,27 +170,27 @@ impl Iterator for GridlineIter {
         if self.done {
             return None;
         }
-        if self.next == self.working_min {
+        // Align gridlines to step
+        if self.next == self.min {
             self.next -= self.next % self.step;
         }
         let position = self.next;
         self.next += self.step;
-        self.next = self.next.min(self.working_max);
+        self.next = self.next.min(self.max);
 
         let weight = match position {
-            p if p == self.pll_pattern_min || p == self.pll_pattern_max => 5.0,
+            p if p == self.pattern_bb.x.min || p == self.pattern_bb.x.min => 5.0,
             p if p % (100.0 * self.step) == 0.0 => 5.0,
             p if p % (10.0 * self.step) == 0.0 => 3.0,
             _ => 1.0,
         };
 
-        if position == self.working_max {
+        if position == self.max {
             self.done = true;
         }
         Some(Gridline {
             position,
-            draw_min: self.prp_pattern_min,
-            draw_max: self.prp_pattern_max,
+            endpoints: utils::Bounds { min: self.pattern_bb.y.min, max: self.pattern_bb.y.max },
             weight,
             axis: self.axis,
         })
@@ -241,24 +226,22 @@ pub fn render(render_context: &mut RenderContext, camera: &Camera, pattern: &Pat
 
     // Create iterators for gridlines currently in view.
     let x_grids = GridlineIter::new(
-        (camera.position[0] - (camera.viewport[0] / (2.0 * camera.zoom))).ceil(),
-        (camera.position[0] + (camera.viewport[0] / (2.0 * camera.zoom))).floor(),
-        0.0,
-        pattern.stitched_dimensions[0] as f32,
-        0.0,
-        pattern.stitched_dimensions[1] as f32,
-        grid_step,
-        Axis::X,
+        (camera.position[0] - (camera.viewport.x / (2.0 * camera.zoom))).ceil(),
+        (camera.position[0] + (camera.viewport.x / (2.0 * camera.zoom))).floor(),
+        Axis::X, grid_step,
+        utils::Bounds2d {
+            x: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.x },
+            y: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.y },
+        }
     );
     let y_grids = GridlineIter::new(
-        (camera.position[1] - (camera.viewport[1] / (2.0 * camera.zoom))).ceil(),
-        (camera.position[1] + (camera.viewport[1] / (2.0 * camera.zoom))).floor(),
-        0.0,
-        pattern.stitched_dimensions[1] as f32,
-        0.0,
-        pattern.stitched_dimensions[0] as f32,
-        grid_step,
-        Axis::Y,
+        (camera.position[1] - (camera.viewport.y / (2.0 * camera.zoom))).ceil(),
+        (camera.position[1] + (camera.viewport.y / (2.0 * camera.zoom))).floor(),
+        Axis::Y, grid_step,
+        utils::Bounds2d {
+            x: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.y },
+            y: utils::Bounds { min: 0.0, max: pattern.stitched_dimensions.x },
+        }
     );
 
     // Iterate over all gridlines in view.
