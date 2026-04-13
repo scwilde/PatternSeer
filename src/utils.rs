@@ -59,6 +59,6 @@ where
 {
     Bounds2d {
         x: Bounds { min: bb[0][0], max: bb[0][1] },
-        y: Bounds { min: bb[1][0], max: bb[1][0] },
+        y: Bounds { min: bb[1][0], max: bb[1][1] },
     }
 }

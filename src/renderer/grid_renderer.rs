@@ -198,12 +198,12 @@ pub fn render(render_context: &mut RenderContext, camera: &Camera, pattern: &Pat
     );
 
     // Iterate over all gridlines in view.
-    // for x_line in x_grids {
-    //     geom.push(x_line.draw(camera));
-    // }
-    // for y_line in y_grids {
-    //     geom.push(y_line.draw(camera));
-    // }
+    for x_line in x_grids {
+        geom.push(x_line.draw(camera));
+    }
+    for y_line in y_grids {
+        geom.push(y_line.draw(camera));
+    }
 
     render_context.rendered_mesh.append_quads(TypeId::of::<GridRendererCallback>(), geom.as_slice())
         .expect("Double dipping memory");
