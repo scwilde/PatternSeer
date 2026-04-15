@@ -1,16 +1,7 @@
 --- Bug Fixes ---
 - [] Slight aliasing when very slowly panning the grid while zoomed out to right before a grid level change
 
---- Current Work ---
-
--[] geometry API
-    -[X] Colors
-    -[X] verts
-    -[] quads
-    -[] tris
-
--- Pattern loading -- 
-
+--- Current Work: Pattern loading & Rendering ---
 Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
 
 -[] Design DB with 64x64 base tiles and mip map tiles up to level 6 (2048x2048 tiles)
@@ -40,12 +31,6 @@ Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
             This needs to be really really fast; 16.67 ms is how long we have between frames so we need to complete all these
             queries *AND* get the textures rendered and into the pipeline within that timeframe. Though dropping can be done in
             its own time, as can the actual writes to the database.
-
--- Pattern rendering (easy ?)
-
--[] Add ability to render that pattern
-    -[] Basic zoomed in rendering
-    -[] Mipmap rendering when zoomed out
 
 -- Basic brush system and pattern editing --
 

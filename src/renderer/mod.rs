@@ -1,10 +1,11 @@
 use eframe::egui_wgpu::{self, wgpu};
-use crate::renderer::mesh::Mesh;
-use std::borrow::Cow;
+use crate::{renderer::mesh::Mesh, utils};
+use std::{borrow::Cow, time::Instant};
 
 mod geometry;
 mod mesh;
 pub mod grid_renderer;
+pub mod frame_timer;
 
 
 /// An object containing the render pipeline and mesh for drawing to the screen.
@@ -14,10 +15,10 @@ pub struct RenderContext {
 }
 
 /// Initializes the `RenderContext` object inside of `callback_resources`.
-/// 
+///
 /// # Parameters
-/// 
-/// - `wgpu_render_state`: Render state of wgpu. 
+///
+/// - `wgpu_render_state`: Render state of wgpu.
 /// Provides the GPU device for the mesh and the reference to `callback_resources` to bind `RenderContext`.
 pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
     const MAIN_SHADER: &str = include_str!("shaders/main_shader.wgsl");
