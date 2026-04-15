@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use eframe::{egui, egui_wgpu};
 use glam::Vec2;
 use crate::camera::Camera;
@@ -50,7 +48,6 @@ impl eframe::App for PatternSeer {
             // Create our rendering canvas filling all available space
             let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
             self.camera.resize(canvas_rect.width(), canvas_rect.height());
-            // self.camera.resize(426.0, 240.0);
 
             // Camera pan and zoom controls
             if canvas_response.dragged_by(egui::PointerButton::Secondary) {
@@ -73,6 +70,7 @@ impl eframe::App for PatternSeer {
             let grid_painter = egui_wgpu::Callback::new_paint_callback(canvas_rect, grid);
             ui.painter().add(grid_painter);
 
+            // * Keep this callback as the last one registered. This resolves the frame_timer.
             ui.painter().add(egui_wgpu::Callback::new_paint_callback(canvas_rect, frame_timer));
         });
     }

@@ -1,6 +1,4 @@
-use std::{
-    any::TypeId, cmp::PartialOrd, collections::HashSet, time::Instant
-};
+use std::cmp::PartialOrd;
 
 /// Traits for internal `utils` use only
 mod sealed {
@@ -55,7 +53,7 @@ where
     pub max: T,
 }
 
-/// Object for storing a minimum and maximum position in 2D space.
+/// Object for storing a 2-Dimensional bounding box.
 #[derive(Default, Debug)]
 pub struct Bounds2d<T>
 where
@@ -65,6 +63,13 @@ where
     pub y: Bounds<T>,
 }
 
+/// Creates a new `Bounds2d` object from an array arranged like so:
+/// ```
+/// [
+///     x: [min, max],
+///     y: [min, max],
+/// ]
+/// ```
 pub fn bounds2d<T>(bb: [[T; 2]; 2]) -> Bounds2d<T>
 where
     T: PartialOrd + Clone + Copy,

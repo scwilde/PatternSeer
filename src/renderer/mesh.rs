@@ -1,5 +1,6 @@
-use std::{any::TypeId, collections::HashMap};
+#![allow(dead_code)]
 
+use std::{any::TypeId, collections::HashMap};
 use eframe::egui_wgpu::wgpu;
 use crate::renderer::geometry;
 
@@ -36,12 +37,11 @@ pub struct Mesh {
     /// Number of total bytes in the geometry.
     geometry_size: usize,
 }
-
 impl Mesh {
-    /// Creates a new `Mesh` instance
-    /// 
+    /// Creates a new `Mesh` instance.
+    ///
     /// # Parameters
-    /// 
+    ///
     /// - `gpu_device`: GPU device to allocate a vertex buffer on.
     /// - `initial_size`: Initial size to allocate for the vertex buffer.
     pub fn new(gpu_device: &wgpu::Device, initial_size: u64) -> Self {
@@ -102,6 +102,19 @@ impl Mesh {
         }
     }
 
+    /// Appends some raw bytes to the mesh.
+    ///
+    /// # Parameters
+    ///
+    /// - `bind_callback`: `PaintCallback` to bind this block of bytes to.
+    /// - `bytes`: Slice of bytes to append to the mesh.
+    /// - `num_verts`: The number of vertices that are being appended to the mesh.
+    ///
+    /// # Returns
+    ///
+    /// `Result` that can be:
+    /// - `Ok`: When the bytes can be appended to the mesh without issue.
+    /// - `Err("msg")`: When the `bind_callback` has been previously bound to a block of geometry.
     fn append_bytes(
         &mut self,
         bind_callback: TypeId,
@@ -131,18 +144,18 @@ impl Mesh {
         Ok(())
     }
 
-    /// Appends one or more vertices to the mesh.
-    /// 
+    /// Appends a slice of `Vertex`s to the mesh.
+    ///
     /// # Parameters
-    /// 
-    /// - `bind_callback`: `RendererCallback` to bind to this block of vertices.
+    ///
+    /// - `bind_callback`: `PaintCallback` to bind this block of geometry to.
     /// - `verts`: Slice of vertices to append to the mesh.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// `Result` that can be:
-    /// - `Ok(())`: When the vertices are appended without issue.
-    /// - `Err(String)`: If `bind_callback` has already been bound to a block of geometry.
+    /// - `Ok`: When the geometry can be appended to the mesh without issue.
+    /// - `Err("msg")`: When the `bind_callback` has been previously bound to a block of geometry.
     pub fn append_verts(&mut self, bind_callback: TypeId, verts: &[geometry::Vertex]) -> Result<(), String> {
         let newbytes: &[u8] = bytemuck::cast_slice(verts);
         self.append_bytes(bind_callback, newbytes, verts.len())?;
@@ -150,10 +163,38 @@ impl Mesh {
         Ok(())
     }
 
+    /// Appends a slice of `Triangle`s to the mesh.
+    ///
+    /// # Parameters
+    ///
+    /// - `bind_callback`: `PaintCallback` to bind this block of geometry to.
+    /// - `tris`: Slice of triangles to append to the mesh.
+    ///
+    /// # Returns
+    ///
+    /// `Result` that can be:
+    /// - `Ok`: When the geometry can be appended to the mesh without issue.
+    /// - `Err("msg")`: When the `bind_callback` has been previously bound to a block of geometry.
+    ///
+    /// # Panics
+    ///
+    /// Always because this method has not been implemented yet.
     pub fn append_tris(&mut self, bind_callback: TypeId, tris: &[geometry::Triangle]) -> Result<(), String> {
         todo!()
     }
 
+    /// Appends a slice of `Quad`s to the mesh.
+    ///
+    /// # Parameters
+    ///
+    /// - `bind_callback`: `PaintCallback` to bind this block of geometry to.
+    /// - `quads`: Slice of quads to append to the mesh.
+    ///
+    /// # Returns
+    ///
+    /// `Result` that can be:
+    /// - `Ok`: When the geometry can be appended to the mesh without issue.
+    /// - `Err("msg")`: When the `bind_callback` has been previously bound to a block of geometry.
     pub fn append_quads(&mut self, bind_callback: TypeId, quads: &[geometry::Quad]) -> Result<(), String> {
         let newbytes: &[u8] = bytemuck::cast_slice(quads);
         self.append_bytes(bind_callback, newbytes, quads.len() * 6)?;
@@ -162,13 +203,13 @@ impl Mesh {
     }
 
     /// Gets a block of geometry and its buffer position from a bound `RendererCallback`'s `TypeID`.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// - `bound_callback`: `RendererCallback` for which to check for bound geometry.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// `Option` which can be
     /// - `None`: When the specified `RenderCallback` is not bound to any block of geometry.
     /// - `Some`: When the specified `RenderCallback` is bound to geometry, the geometry will be returned in the form:
@@ -183,11 +224,10 @@ impl Mesh {
     }
 
     /// Clears all stored geometry from the mesh. As its meant to be run at the beginning of each frame
-    /// it Keeps the previously allocated vertex buffer.
+    /// it keeps the previously allocated vertex buffer for reuse.
     pub fn clear(&mut self) {
         self.geometry.clear();
         self.geometry_len = 0;
         self.geometry_size = 0;
     }
 }
-

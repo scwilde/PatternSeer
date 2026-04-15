@@ -1,6 +1,6 @@
 use eframe::egui_wgpu::{self, wgpu};
-use crate::{renderer::mesh::Mesh, utils};
-use std::{borrow::Cow, time::Instant};
+use crate::renderer::mesh::Mesh;
+use std::borrow::Cow;
 
 mod geometry;
 mod mesh;

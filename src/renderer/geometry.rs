@@ -1,6 +1,7 @@
+#![allow(dead_code)]
+
 use bytemuck;
 use glam::{Vec2, vec2};
-
 use crate::utils;
 
 /// An axis of movement.
@@ -37,12 +38,19 @@ pub struct Vertex {
     pub color: Color,
 }
 
+/// A triangle object which stores 3 vertices in clockwise winding order.
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Triangle { 
+pub struct Triangle {
     verts: [Vertex; 3]
 }
 impl Triangle {
+    /// Creates a new triangle with a solid color.
+    ///
+    /// # Parameters
+    ///
+    /// - `verts`: The positions of the 3 vertices that make up this triangle.
+    /// - `color`: Solid color to fill the triangle with.
     pub fn new(verts: [Vec2; 3], color: Color) -> Self {
         Self { verts: [
             Vertex { position: verts[0], color },
@@ -51,19 +59,28 @@ impl Triangle {
         ] }
     }
 
+    /// Creates a new triangle by specified the 3 `Vertex`s that define it.
     pub fn from_verts(verts: [Vertex; 3]) -> Self { Self { verts } }
 
+    /// Returns the 3 `Vertex`s that make up this triangle.
     pub fn to_verts(&self) -> [Vertex; 3] {
         self.verts
     }
 }
 
+/// Quad made up of two `Triangle`s.
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Quad { 
+pub struct Quad {
     tris: [Triangle; 2],
 }
 impl Quad {
+    /// Creates a new quad from a 2D bounding box.
+    ///
+    /// # Parameters
+    ///
+    /// - `bb`: The 2D bounding box which encompasses this quad.
+    /// - `color`: Solid color used to fill the quad.
     pub fn from_bb(bb: utils::Bounds2d<f32>, color: Color) -> Self{
         Self {
             tris: [
@@ -82,7 +99,12 @@ impl Quad {
             ]
         }
     }
-    
+
+    /// Creates a quad by specifying the 4 `Vertex`s that define it.
+    ///
+    /// # Parameters
+    ///
+    /// `verts`: Vertices that define this quad. Assumed to be provided in clockwise winding order.
     pub fn from_verts(verts: [Vertex; 4]) -> Self {
         Self {
             tris: [
@@ -92,6 +114,7 @@ impl Quad {
         }
     }
 
+    /// Returns the 6 `Vertex`s that make up this quad.
     pub fn to_verts(&self) -> [Vertex; 6] {
         [
             self.tris[0].to_verts()[0],
