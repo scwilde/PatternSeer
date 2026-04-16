@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use eframe::{egui, egui_wgpu};
 use glam::Vec2;
 use crate::camera::Camera;
@@ -16,6 +17,8 @@ struct PatternSeer {
     camera: Camera,
     /// Container for the pattern we are currently working on.
     pattern: Pattern,
+    /// Path to the currently opened file.
+    open_file: Option<PathBuf>
 }
 impl PatternSeer {
     /// Creates a new instance of PatternSeer.
@@ -32,15 +35,38 @@ impl PatternSeer {
         PatternSeer {
             camera,
             pattern,
+            open_file: None,
         }
     }
 }
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
+        egui::Panel::top("Menu Bar").show_inside(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("New").clicked() && let Some(path) = rfd::FileDialog::new()
+                        .add_filter("PatternSeer Pattern", &["psp"])
+                        .save_file() {
+                            self.open_file = Some(path);
+                            println!("Saving new file: {:?}", self.open_file);
+                        }
+                    if ui.button("Open").clicked() && let Some(path) = rfd::FileDialog::new()
+                        .add_filter("PatternSeer Pattern", &["psp"])
+                        .pick_file() {
+                            self.open_file = Some(path);
+                            println!("Opening file: {:?}", self.open_file);
+                    }
+                    ui.separator();
+                    if ui.button("Quit").clicked() {
+                        ui.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                });
+            });
+        });
+
         // Central UI pannel
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let frame_timer = renderer::frame_timer::start();
-
             // ! This is horrible. Rework the Graphics API so we don't have to do this
             let mut wgpu_renderer = frame.wgpu_render_state().unwrap().renderer.write();
             let render_context = wgpu_renderer.callback_resources.get_mut::<RenderContext>().unwrap();

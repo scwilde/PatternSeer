@@ -2,6 +2,15 @@
 - [] Slight aliasing when very slowly panning the grid while zoomed out to right before a grid level change
 
 --- Current Work: Pattern loading & Rendering ---
+-[X] Basic file menu with 'new' and 'open' buttons
+-[] Basic DB file interactions
+    -[] On first opening program, pattern is empty
+    -[] On loading pattern from file, change size of grid to match
+    -[] Pattern creation dialogue
+        -[] On hitting "new" a window pops up that lets you select the size of the pattern and where to save it
+        -[] When you hit "ok" A new DB file is created with the stored pattern size
+
+
 Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
 
 -[] Design DB with 64x64 base tiles and mip map tiles up to level 6 (2048x2048 tiles)
@@ -10,7 +19,7 @@ Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
     -[] Pull any tiles not in the cache in from the DB
     -[] Each frame, all tiles in cache not in the current view should have an age value incremented
     -[] If the cache has exceeded its threshold, boot all the oldest entries until cache is satisfied
-            These last two should really be done with an LinkedHashMap, however that requires a linked list which 
+            These last two should really be done with an LinkedHashMap, however that requires a linked list which
             requires writing unsafe code.
 -[] When a base tile is marked as dirty, propagate that staleness upwards
 -[] When a tile is marked as stale, recursively regenerate its anchestor tiles as needed

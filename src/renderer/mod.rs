@@ -25,7 +25,7 @@ pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
     let callback_resources = &mut wgpu_render_state.renderer.write().callback_resources;
     let gpu_device = wgpu_render_state.device.clone();
 
-    let rendered_mesh = Mesh::new(&gpu_device, 1024);
+    let rendered_mesh = Mesh::new(&gpu_device, 65536);
 
     let shader_module = gpu_device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Main shader module"),
