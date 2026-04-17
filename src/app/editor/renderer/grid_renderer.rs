@@ -1,10 +1,19 @@
 use crate::{
-    camera::Camera,
-    pattern::Pattern,
-    renderer::{
-        RenderContext,
-        geometry::{Axis, Color, Quad},
+    app::{
+        editor::{
+            camera::Camera,
+            renderer::{
+                geometry::{
+                    Axis,
+                    Quad,
+                    Color,
+                },
+                mesh::Mesh,
+                EditorRenderContext,
+            },
+        },
     },
+    pattern::Pattern,
     utils,
 };
 use eframe::{
@@ -174,7 +183,7 @@ impl Iterator for GridlineIter {
 ///
 /// `GridRenderCallback` to be passed back to `egui_wgpu::Callback::new_paint_callback()`.
 pub fn render(
-    render_context: &mut RenderContext,
+    render_context: &mut EditorRenderContext,
     camera: &Camera,
     pattern: &Pattern,
 ) -> GridRendererCallback {
@@ -238,7 +247,7 @@ impl egui_wgpu::CallbackTrait for GridRendererCallback {
         _egui_encoder: &mut wgpu::CommandEncoder,
         callback_resources: &mut egui_wgpu::CallbackResources,
     ) -> Vec<wgpu::CommandBuffer> {
-        if let Some(render_context) = &mut callback_resources.get_mut::<RenderContext>() {
+        if let Some(render_context) = &mut callback_resources.get_mut::<EditorRenderContext>() {
             let (vertex_buffer, buffer_pos, vert_bytes) = render_context
                 .rendered_mesh
                 .get(&TypeId::of::<Self>())
@@ -256,7 +265,7 @@ impl egui_wgpu::CallbackTrait for GridRendererCallback {
         render_pass: &mut wgpu::RenderPass<'static>,
         callback_resources: &egui_wgpu::CallbackResources,
     ) {
-        if let Some(render_context) = callback_resources.get::<RenderContext>() {
+        if let Some(render_context) = callback_resources.get::<EditorRenderContext>() {
             let (vertex_buffer, buffer_pos, _vert_bytes) = render_context
                 .rendered_mesh
                 .get(&TypeId::of::<Self>())

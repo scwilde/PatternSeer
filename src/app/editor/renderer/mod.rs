@@ -1,5 +1,5 @@
 use eframe::egui_wgpu::{self, wgpu};
-use crate::renderer::mesh::Mesh;
+use crate::app::editor::renderer::mesh::Mesh;
 use std::borrow::Cow;
 
 mod geometry;
@@ -9,12 +9,12 @@ pub mod frame_timer;
 
 
 /// An object containing the render pipeline and mesh for drawing to the screen.
-pub struct RenderContext {
+pub struct EditorRenderContext {
     pub render_pipeline: wgpu::RenderPipeline,
     pub rendered_mesh: Mesh,
 }
 
-/// Initializes the `RenderContext` object inside of `callback_resources`.
+/// Initializes the `EditorRenderContext` object inside of `callback_resources`.
 ///
 /// # Parameters
 ///
@@ -67,7 +67,7 @@ pub fn init(wgpu_render_state: &egui_wgpu::RenderState) {
         cache: None,
     });
 
-    callback_resources.insert(RenderContext {
+    callback_resources.insert(EditorRenderContext {
         render_pipeline,
         rendered_mesh,
     });

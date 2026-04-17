@@ -1,6 +1,5 @@
-use crate::camera::Camera;
 use crate::pattern::Pattern;
-use crate::renderer::{self, RenderContext};
+use crate::app::editor::Editor;
 use glam::Vec2;
 use std::path::PathBuf;
 use eframe::{egui, egui_wgpu};
@@ -12,8 +11,8 @@ mod editor;
 
 /// An instance of the application.
 pub struct PatternSeer {
-    /// The camera used for rendering.
-    camera: Camera,
+    /// The editor panel.
+    editor: Editor,
     /// Container for the pattern we are currently working on.
     pattern: Option<Pattern>,
 }
@@ -22,12 +21,12 @@ impl PatternSeer {
     ///
     /// # Parameters
     ///
-    /// * 'cc' - `CreationContext` provided by something like `eframe::run_native()`.
+    /// - 'cc': `CreationContext` provided by something like `eframe::run_native()`.
     pub fn new(cc: &eframe::CreationContext) -> Self {
-        renderer::init(cc.wgpu_render_state.as_ref().unwrap());
+        editor::renderer::init(cc.wgpu_render_state.as_ref().unwrap());
 
         PatternSeer {
-            camera: Camera::default(),
+            editor: Editor::new(),
             pattern: None,
         }
     }
@@ -37,7 +36,7 @@ impl eframe::App for PatternSeer {
         menu_bar::show(ui, frame, &mut self.pattern);
 
         if let Some(pattern) = &mut self.pattern {
-            editor::show(ui, frame, &mut self.camera, pattern);
+            self.editor.show(ui, frame, pattern);
         }
     }
 }

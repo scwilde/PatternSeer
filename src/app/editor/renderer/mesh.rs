@@ -2,7 +2,7 @@
 
 use std::{any::TypeId, collections::HashMap};
 use eframe::egui_wgpu::wgpu;
-use crate::renderer::geometry;
+use crate::app::editor::renderer::geometry;
 
 /// Contains information about a block of memory in a GPU vertex buffer.
 #[derive(Debug)]
