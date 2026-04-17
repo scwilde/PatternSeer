@@ -1,5 +1,5 @@
 use std::{path::Path, str::FromStr};
-use sqlx::{Sqlite, SqlitePool, sqlite::SqliteConnectOptions};
+use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use tokio::runtime::Runtime;
 
 pub struct PatternMeta {
@@ -17,7 +17,7 @@ impl Pattern {
         if path_obj.exists() {
             match std::fs::remove_file(path_obj) {
                 Ok(_) => {},
-                Err(e) => { todo!() }
+                Err(_e) => { todo!() }
             }
         }
 

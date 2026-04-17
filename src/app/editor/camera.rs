@@ -14,20 +14,6 @@ pub struct Camera {
 }
 
 impl Camera {
-    /// Create a new camera for the scene
-    ///
-    /// # Parameters
-    ///
-    /// - `pattern`: The pattern that this camera is intended to render.
-    ///     This is used to set the camera's initial position to the center of the pattern.
-    pub fn new(pattern: &Pattern) -> Self{
-        Self {
-            position: Vec2::new(pattern.metadata.width as f32 / 2.0, pattern.metadata.height as f32 / 2.0),
-            viewport: Vec2::default(),
-            zoom: 50.0,
-        }
-    }
-
     /// Calculate where the camera is allowed to be in space without losing the pattern.
     /// If the camera's position is outside those bounds, clamp it.
     ///
@@ -87,5 +73,15 @@ impl Camera {
     pub fn zoom(&mut self, delta_z: f32) {
         let zoom_sensitivity = 0.01;
         self.zoom += self.zoom * delta_z * zoom_sensitivity;
+    }
+
+    pub fn center(&mut self, pattern: &Pattern) {
+        let margin = 50.0;
+        let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.metadata.width as f32;
+        let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.metadata.height as f32;
+        self.zoom = utils::minf(min_zoom_x, min_zoom_y);
+
+        self.position.x = (pattern.metadata.width as f32) / 2.0;
+        self.position.y = (pattern.metadata.height as f32) / 2.0;
     }
 }

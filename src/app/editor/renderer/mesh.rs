@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{any::TypeId, collections::HashMap};
 use eframe::egui_wgpu::wgpu;
 use crate::app::editor::renderer::geometry;
@@ -156,6 +154,7 @@ impl Mesh {
     /// `Result` that can be:
     /// - `Ok`: When the geometry can be appended to the mesh without issue.
     /// - `Err("msg")`: When the `bind_callback` has been previously bound to a block of geometry.
+    #[allow(dead_code)]
     pub fn append_verts(&mut self, bind_callback: TypeId, verts: &[geometry::Vertex]) -> Result<(), String> {
         let newbytes: &[u8] = bytemuck::cast_slice(verts);
         self.append_bytes(bind_callback, newbytes, verts.len())?;
@@ -179,6 +178,7 @@ impl Mesh {
     /// # Panics
     ///
     /// Always because this method has not been implemented yet.
+    #[allow(dead_code, unused_variables)]
     pub fn append_tris(&mut self, bind_callback: TypeId, tris: &[geometry::Triangle]) -> Result<(), String> {
         todo!()
     }

@@ -26,7 +26,7 @@ impl Editor {
         &mut self,
         ui: &mut egui::Ui,
         frame: &mut eframe::Frame,
-        pattern:&mut Pattern,
+        pattern: &mut Pattern,
     ) {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let frame_timer = renderer::frame_timer::start();
@@ -62,5 +62,8 @@ impl Editor {
             // * Keep this callback as the last one registered. This resolves the frame_timer.
             ui.painter().add(egui_wgpu::Callback::new_paint_callback(canvas_rect, frame_timer));
         });
+    }
+    pub fn center(&mut self, pattern: &Pattern) {
+        self.camera.center(pattern);
     }
 }

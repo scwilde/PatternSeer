@@ -8,7 +8,6 @@ use crate::{
                     Quad,
                     Color,
                 },
-                mesh::Mesh,
                 EditorRenderContext,
             },
         },

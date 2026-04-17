@@ -1,11 +1,9 @@
-use crate::pattern::Pattern;
+use crate::{app::menubar::MenubarEvent, pattern::Pattern};
 use crate::app::editor::Editor;
-use glam::Vec2;
-use std::path::PathBuf;
-use eframe::{egui, egui_wgpu};
+use eframe::egui;
 
 
-mod menu_bar;
+mod menubar;
 mod editor;
 
 
@@ -33,7 +31,13 @@ impl PatternSeer {
 }
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
-        menu_bar::show(ui, frame, &mut self.pattern);
+        match menubar::show(ui, frame) {
+            MenubarEvent::CreatePattern => println!("Create pattern"),
+            MenubarEvent::OpenPattern { path } => println!("Opening pattern {}", path.display()),
+
+            MenubarEvent::CloseWindow => ui.send_viewport_cmd(egui::ViewportCommand::Close),
+            MenubarEvent::DoNothing => {}
+        }
 
         if let Some(pattern) = &mut self.pattern {
             self.editor.show(ui, frame, pattern);
