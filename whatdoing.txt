@@ -1,11 +1,19 @@
 --- Bug Fixes ---
-- [] Slight aliasing when very slowly panning the grid while zoomed out to right before a grid level change
+-[] Slight aliasing when very slowly panning the grid while zoomed out to right before a grid level change
+-[] When zoomed out to the farthest zoom level the top and right grid edges are too thin
 
 --- Current Work: Pattern loading & Rendering ---
 -[X] Basic file menu with 'new' and 'open' buttons
+-[X] `impl eframe::App for PatternSeer` is getting very complex. Break it up.
 -[] Basic DB file interactions
-    -[] On first opening program, pattern is empty
-    -[] On loading pattern from file, change size of grid to match
+    -[X] On first opening program, pattern is empty
+            This is surprisingly complicated 🫪
+        -[X] Pattern can be None
+        -[X] Don't render the editor if the pattern is None
+        -[] Replace the editor with something helpful when pattern is None
+    -[] Upon opening or creating a new pattern, place the camera at the center
+        of the pattern, zoomed as far out as possible
+    -[X] On loading pattern from file, change size of grid to match
     -[] Pattern creation dialogue
         -[] On hitting "new" a window pops up that lets you select the size of the pattern and where to save it
         -[] When you hit "ok" A new DB file is created with the stored pattern size

@@ -195,8 +195,8 @@ pub fn render(
         Axis::X,
         grid_step,
         utils::bounds2d([
-            [0.0, pattern.stitched_dimensions.x],
-            [0.0, pattern.stitched_dimensions.y],
+            [0.0, pattern.metadata.width as f32],
+            [0.0, pattern.metadata.height as f32],
         ]),
     );
     let y_grids = GridlineIter::new(
@@ -205,8 +205,8 @@ pub fn render(
         Axis::Y,
         grid_step,
         utils::bounds2d([
-            [0.0, pattern.stitched_dimensions.y],
-            [0.0, pattern.stitched_dimensions.x],
+            [0.0, pattern.metadata.height as f32],
+            [0.0, pattern.metadata.width as f32],
         ]),
     );
 

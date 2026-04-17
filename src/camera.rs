@@ -15,16 +15,14 @@ pub struct Camera {
 
 impl Camera {
     /// Create a new camera for the scene
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// - `pattern`: The pattern that this camera is intended to render.
     ///     This is used to set the camera's initial position to the center of the pattern.
     pub fn new(pattern: &Pattern) -> Self{
-        let pattern_width = pattern.stitched_dimensions.x;
-        let pattern_height = pattern.stitched_dimensions.y;
         Self {
-            position: Vec2::new(pattern_width / 2.0, pattern_height / 2.0),
+            position: Vec2::new(pattern.metadata.width as f32 / 2.0, pattern.metadata.height as f32 / 2.0),
             viewport: Vec2::default(),
             zoom: 50.0,
         }
@@ -32,20 +30,20 @@ impl Camera {
 
     /// Calculate where the camera is allowed to be in space without losing the pattern.
     /// If the camera's position is outside those bounds, clamp it.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// - `pattern`: Pattern used to determine where the camera is allowed to pan.
     pub fn limit_pan(&mut self, pattern: &Pattern) {
         let margin = 50.0;
         let position_bounds = utils::Bounds2d {
             x: utils::Bounds {
                 min: ((self.viewport.x - margin) / (-2.0 * self.zoom)) + 1.0,
-                max: (pattern.stitched_dimensions.x) + ((self.viewport.x - margin) / (2.0 * self.zoom)) - 1.0,
+                max: (pattern.metadata.width as f32) + ((self.viewport.x - margin) / (2.0 * self.zoom)) - 1.0,
             },
             y: utils::Bounds {
                 min: ((self.viewport.y - margin) / (-2.0 * self.zoom)) + 1.0,
-                max: (pattern.stitched_dimensions.y) + ((self.viewport.y - margin) / (2.0 * self.zoom)) - 1.0,
+                max: (pattern.metadata.height as f32) + ((self.viewport.y - margin) / (2.0 * self.zoom)) - 1.0,
             },
         };
 
@@ -54,14 +52,14 @@ impl Camera {
     }
 
     /// Calculate how far in/out the camera is allowed to zoom and clamp it to those values.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// - `pattern`: `Pattern` used to determine how far the camera can zoom in or out based on its dimensions.
     pub fn limit_zoom(&mut self, pattern: &Pattern) {
         let margin = 50.0;
-        let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.stitched_dimensions.x;
-        let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.stitched_dimensions.y;
+        let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.metadata.width as f32;
+        let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.metadata.height as f32;
         let zoom_bounds = utils::Bounds {
             min: utils::minf(min_zoom_x, min_zoom_y),
             max: utils::minf(self.viewport.x, self.viewport.y) - (margin * 2.0),
@@ -84,7 +82,7 @@ impl Camera {
     }
 
     /// Zooms the camera, increasing or decreasing the pixel size of one unit of world space.
-    /// Scaled with the current zoom level so that zooming doesn't appear to slow down when zoomed 
+    /// Scaled with the current zoom level so that zooming doesn't appear to slow down when zoomed
     /// very far in or out.
     pub fn zoom(&mut self, delta_z: f32) {
         let zoom_sensitivity = 0.01;
