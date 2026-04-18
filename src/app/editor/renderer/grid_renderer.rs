@@ -149,7 +149,7 @@ impl Iterator for GridlineIter {
         self.next = self.next.min(self.max);
 
         let weight = match position {
-            p if p == self.pattern_bb.x.min || p == self.pattern_bb.x.min => 5.0,
+            p if p == self.pattern_bb.x.min || p == self.pattern_bb.x.max => 5.0,
             p if p % (100.0 * self.step) == 0.0 => 5.0,
             p if p % (10.0 * self.step) == 0.0 => 3.0,
             _ => 1.0,
