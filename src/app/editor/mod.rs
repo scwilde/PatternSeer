@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     app::editor::{
         camera::Camera,
@@ -12,13 +14,21 @@ pub mod renderer;
 mod camera;
 
 
+#[derive(Eq, Hash, PartialEq)]
+pub enum EditorCommand {
+    FitToPattern,
+}
+
+
 pub struct Editor {
     camera: Camera,
+    pending_cmds: HashSet<EditorCommand>,
 }
 impl Editor {
     pub fn new() -> Self {
         Self {
             camera: Camera::default(),
+            pending_cmds: HashSet::new(),
         }
     }
 
@@ -30,19 +40,23 @@ impl Editor {
     ) {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let frame_timer = renderer::frame_timer::start();
+
             // ! This is horrible. Rework the Graphics API so we don't have to do this
             let mut wgpu_renderer = frame.wgpu_render_state().unwrap().renderer.write();
             let render_context = wgpu_renderer.callback_resources.get_mut::<EditorRenderContext>().unwrap();
 
             // Create our rendering canvas filling all available space
-            let (canvas_rect, canvas_response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
-            self.camera.resize(canvas_rect.width(), canvas_rect.height());
+            let (rect, response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
+            self.camera.resize(rect.width(), rect.height());
+            if self.pending_cmds.remove(&EditorCommand::FitToPattern) {
+                self.camera.center(pattern);
+            }
 
             // Camera pan and zoom controls
-            if canvas_response.dragged_by(egui::PointerButton::Secondary) {
-                self.camera.pan(canvas_response.drag_delta().x, canvas_response.drag_delta().y);
+            if response.dragged_by(egui::PointerButton::Secondary) {
+                self.camera.pan(response.drag_delta().x, response.drag_delta().y);
             }
-            if canvas_response.hovered() {
+            if response.hovered() {
                 let scroll_delta = ui.input(|i| i.smooth_scroll_delta);
                 if scroll_delta.y != 0.0 {
                     self.camera.zoom(scroll_delta.y);
@@ -56,14 +70,15 @@ impl Editor {
             // Render the canvas
             render_context.rendered_mesh.clear();
             let grid = renderer::grid_renderer::render(render_context, &self.camera, &pattern);
-            let grid_painter = egui_wgpu::Callback::new_paint_callback(canvas_rect, grid);
+            let grid_painter = egui_wgpu::Callback::new_paint_callback(rect, grid);
             ui.painter().add(grid_painter);
 
             // * Keep this callback as the last one registered. This resolves the frame_timer.
-            ui.painter().add(egui_wgpu::Callback::new_paint_callback(canvas_rect, frame_timer));
+            ui.painter().add(egui_wgpu::Callback::new_paint_callback(rect, frame_timer));
         });
     }
-    pub fn center(&mut self, pattern: &Pattern) {
-        self.camera.center(pattern);
+
+    pub fn queue_cmd(&mut self, cmd: EditorCommand) {
+        self.pending_cmds.insert(cmd);
     }
 }

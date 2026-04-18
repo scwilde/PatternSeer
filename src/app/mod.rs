@@ -1,5 +1,5 @@
 use crate::{app::menubar::MenubarEvent, pattern::Pattern};
-use crate::app::editor::Editor;
+use crate::app::editor::{Editor, EditorCommand};
 use eframe::egui;
 
 
@@ -32,10 +32,25 @@ impl PatternSeer {
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
         match menubar::show(ui, frame) {
-            MenubarEvent::CreatePattern => println!("Create pattern"),
-            MenubarEvent::OpenPattern { path } => println!("Opening pattern {}", path.display()),
-
+            // File events
+            MenubarEvent::CreatePattern => println!("TODO: Create pattern"),
+            MenubarEvent::OpenPattern { path } => {
+                self.pattern = match Pattern::open_sync(path.as_str()) {
+                    Ok(pattern) => {
+                        self.editor.queue_cmd(EditorCommand::FitToPattern);
+                        Some(pattern)
+                    },
+                    Err(e) => {
+                        println!("Issue opening '{}': {}", path, e);
+                        None
+                    },
+                }
+            },
             MenubarEvent::CloseWindow => ui.send_viewport_cmd(egui::ViewportCommand::Close),
+
+            // View events
+            MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommand::FitToPattern),
+
             MenubarEvent::DoNothing => {}
         }
 
