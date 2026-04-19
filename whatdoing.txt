@@ -1,22 +1,29 @@
 --- Bug Fixes ---
 -[] Slight aliasing when very slowly panning the grid while zoomed out to right before a grid level change
--[] When zoomed out to the farthest zoom level the top and right grid edges are too thin
+-[] Sometimes the cutout corners come back
+
+
+--- House Keeping ---
+-[] Update Documentation
 
 --- Current Work: Pattern loading & Rendering ---
 -[X] Basic file menu with 'new' and 'open' buttons
 -[X] `impl eframe::App for PatternSeer` is getting very complex. Break it up.
--[] Basic DB file interactions
+-[X] Basic DB file interactions
     -[X] On first opening program, pattern is empty
             This is surprisingly complicated 🫪
         -[X] Pattern can be None
         -[X] Don't render the editor if the pattern is None
         -[] Replace the editor with something helpful when pattern is None
-    -[] Upon opening or creating a new pattern, place the camera at the center
+    -[X] Upon opening or creating a new pattern, place the camera at the center
         of the pattern, zoomed as far out as possible
+            Again, surprisingly difficult 🫪
     -[X] On loading pattern from file, change size of grid to match
-    -[] Pattern creation dialogue
-        -[] On hitting "new" a window pops up that lets you select the size of the pattern and where to save it
-        -[] When you hit "ok" A new DB file is created with the stored pattern size
+    -[X] Pattern creation dialogue
+        -[X] On hitting "new" a window pops up that lets you select the size of the pattern and where to save it
+            - [X] Select were to save pattern
+            - [X] Set size of pattern
+        -[X] When you hit "ok" A new DB file is created with the stored pattern size
 
 
 Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
@@ -49,15 +56,23 @@ Mipmap level = floor(log_2(1/zoom) + 1), clamped to  1 - 6
             queries *AND* get the textures rendered and into the pipeline within that timeframe. Though dropping can be done in
             its own time, as can the actual writes to the database.
 
--- Basic brush system and pattern editing --
+--- Basic brush system and pattern editing ---
 
 -[] Add ability to edit pattern one pixel at a time
 -[] Add increased brush size
 -[] Add delta interpolation of brush
 
--- Basic Floss & color system --
+--- Basic Floss & color system ---
 !! Can we release 0.1 here??? !!
--- Special Stitches; Backstitching, /4 stitches, petite --
--- Meat and potatoes: Digitization tools --
--- Meat and potatoes: Color interpolation tools --
--- Meat and potatoes: Pixel art tools like dithering --
+--- Special Stitches; Backstitching, /4 stitches, petite, fr knots ---
+--- Custom symbol system ---
+--- Meat and potatoes: Digitization tools ---
+--- Meat and potatoes: Color interpolation tools ---
+--- Meat and potatoes: Pixel art tools like dithering ---
+
+
+--- Scope/API creep ---
+- Signaling API
+    - What if we want to instruct Editor to do things and send it along some data as well?
+    - What if we want to instruct a retained mode UI element that has already run its course for this frame to do something on the next frame?
+    - What if we want to instruct an immediate mode UI element that has already run its course for this frame to do something on the next frame?

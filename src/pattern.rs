@@ -2,17 +2,37 @@ use std::{path::Path, str::FromStr};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use tokio::runtime::Runtime;
 
+
+#[derive(Debug, Clone)]
+pub struct PatternDraft {
+    pub width: i16,
+    pub height: i16,
+    pub path: Option<String>
+}
+impl PatternDraft {
+    pub fn new() -> Self {
+        Self {
+            width: 30,
+            height: 30,
+            path: None,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct PatternMeta {
     pub width: i16,
     pub height: i16,
 }
 
+#[derive(Debug)]
 pub struct Pattern {
     pub metadata: PatternMeta,
     pub db_pool: SqlitePool,
 }
 impl Pattern {
-    pub fn create_sync(path: &str, width: i16, height: i16) -> sqlx::Result<Self> {
+    pub fn from_draft(draft: PatternDraft) -> sqlx::Result<Self> {
+        let path = draft.path.as_ref().unwrap().as_str();
         let path_obj = Path::new(path);
         if path_obj.exists() {
             match std::fs::remove_file(path_obj) {
@@ -41,14 +61,14 @@ impl Pattern {
 
             sqlx::query!(
                 "INSERT INTO metadata (id, width, height) VALUES (0, ?, ?)",
-                width,
-                height
+                draft.width,
+                draft.height,
             )
             .execute(&db_pool)
             .await?;
 
             Ok(Self {
-                metadata: PatternMeta { width, height },
+                metadata: PatternMeta { width: draft.width, height: draft.height },
                 db_pool,
             })
         })
