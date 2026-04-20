@@ -7,6 +7,7 @@ use eframe::egui;
 
 mod menubar;
 mod editor;
+mod forms;
 mod pattern_creation_form;
 
 

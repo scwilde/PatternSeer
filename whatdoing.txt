@@ -5,6 +5,8 @@
 
 --- House Keeping ---
 -[] Update Documentation
+-[] Improve (abstract?) pattern creation dialogue
+
 
 --- Current Work: Pattern loading & Rendering ---
 -[X] Basic file menu with 'new' and 'open' buttons
