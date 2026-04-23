@@ -14,15 +14,17 @@ pub mod renderer;
 mod camera;
 
 
+/// Commands passed to the editor by other GUI elements drawn first in the frame.
 #[derive(Eq, Hash, PartialEq)]
-pub enum EditorCommand {
+pub enum EditorCommands {
     FitToPattern,
 }
 
 
+/// The main panel on screen where a pattern can be seen and edited.
 pub struct Editor {
     camera: Camera,
-    pending_cmds: HashSet<EditorCommand>,
+    pending_cmds: HashSet<EditorCommands>,
 }
 impl Editor {
     pub fn new() -> Self {
@@ -32,6 +34,7 @@ impl Editor {
         }
     }
 
+    /// Draws the editor onto the screen for one frame.
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
@@ -41,15 +44,15 @@ impl Editor {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let frame_timer = renderer::frame_timer::start();
 
-            // ! This is horrible. Rework the Graphics API so we don't have to do this
+            // TODO This is horrible. Rework the Graphics API so we don't have to do this
             let mut wgpu_renderer = frame.wgpu_render_state().unwrap().renderer.write();
             let render_context = wgpu_renderer.callback_resources.get_mut::<EditorRenderContext>().unwrap();
 
             // Create our rendering canvas filling all available space
             let (rect, response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
             self.camera.resize(rect.width(), rect.height());
-            if self.pending_cmds.remove(&EditorCommand::FitToPattern) {
-                self.camera.center(pattern);
+            if self.pending_cmds.remove(&EditorCommands::FitToPattern) {
+                self.camera.fit_to_pattern(pattern);
             }
 
             // Camera pan and zoom controls
@@ -78,7 +81,9 @@ impl Editor {
         });
     }
 
-    pub fn queue_cmd(&mut self, cmd: EditorCommand) {
+    /// Queues up a new `EditorCommands` variant for editor to act on in its next frame.
+    /// Each variant will only be queued up once per frame.
+    pub fn queue_cmd(&mut self, cmd: EditorCommands) {
         self.pending_cmds.insert(cmd);
     }
 }

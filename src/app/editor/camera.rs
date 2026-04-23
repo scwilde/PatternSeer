@@ -14,12 +14,12 @@ pub struct Camera {
 }
 
 impl Camera {
-    /// Calculate where the camera is allowed to be in space without losing the pattern.
+    /// Calculates where the camera is allowed to be in space without losing the pattern.
     /// If the camera's position is outside those bounds, clamp it.
     ///
     /// # Parameters
     ///
-    /// - `pattern`: Pattern used to determine where the camera is allowed to pan.
+    /// - `pattern`: `Pattern` used to determine where the camera is allowed to pan.
     pub fn limit_pan(&mut self, pattern: &Pattern) {
         let margin = 50.0;
         let position_bounds = utils::Bounds2d {
@@ -37,7 +37,7 @@ impl Camera {
         self.position.y = self.position.y.clamp(position_bounds.y.min, position_bounds.y.max);
     }
 
-    /// Calculate how far in/out the camera is allowed to zoom and clamp it to those values.
+    /// Calculates how far in/out the camera is allowed to zoom and clamps it to those values.
     ///
     /// # Parameters
     ///
@@ -54,14 +54,24 @@ impl Camera {
         self.zoom = self.zoom.clamp(zoom_bounds.min, zoom_bounds.max);
     }
 
-    /// Resize the camera's viewport to the specified dimensions.
+    /// Resizes the camera's viewport to the specified dimensions.
+    ///
+    /// # Parameters
+    ///
+    /// - `width`: New width of the viewport.
+    /// - `height`: New width of the viewport.
     pub fn resize(&mut self, width: f32, height: f32) {
         self.viewport.x = width;
         self.viewport.y = height;
     }
 
     /// Pans the camera through world space.
-    /// Scaled with zoom so that any objects remain in the same position relative to the cursor.
+    /// Scaled with zoom so that everything on screen remains in the same position relative to the cursor.
+    ///
+    /// # Parameters
+    ///
+    /// - `delta_x`: Motion of the mouse on the x-axis.
+    /// - `delta_y`: Motion of the mouse on the y-axis.
     pub fn pan(&mut self, delta_x: f32, delta_y: f32) {
         self.position.x -= delta_x / self.zoom;
         self.position.y += delta_y / self.zoom;
@@ -70,12 +80,21 @@ impl Camera {
     /// Zooms the camera, increasing or decreasing the pixel size of one unit of world space.
     /// Scaled with the current zoom level so that zooming doesn't appear to slow down when zoomed
     /// very far in or out.
+    ///
+    /// # Parameters
+    ///
+    /// - `delta_z`: Scroll wheel delta.
     pub fn zoom(&mut self, delta_z: f32) {
         let zoom_sensitivity = 0.01;
         self.zoom += self.zoom * delta_z * zoom_sensitivity;
     }
 
-    pub fn center(&mut self, pattern: &Pattern) {
+    /// Centers the camera on the given `Pattern` and zooms so the entire thing fits in view.
+    ///
+    /// # Parameters
+    ///
+    /// - `pattern`: Pattern to fit inside of view.
+    pub fn fit_to_pattern(&mut self, pattern: &Pattern) {
         let margin = 50.0;
         let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.metadata.width as f32;
         let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.metadata.height as f32;

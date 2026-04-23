@@ -1,5 +1,6 @@
 use eframe::egui;
 
+/// Events caused by interactions with the menubar.
 pub enum MenubarEvent {
     CreatePattern,
     OpenPattern { path: String },
@@ -9,6 +10,7 @@ pub enum MenubarEvent {
     DoNothing,
 }
 
+/// Displays the menubar to the screen for one frame.
 pub fn show(
     ui: &mut egui::Ui,
     _frame: &mut eframe::Frame,

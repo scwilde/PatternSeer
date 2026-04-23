@@ -1,7 +1,7 @@
 use crate::app::pattern_creation_form::PatternCreationForm;
 use crate::pattern::PatternDraft;
 use crate::{app::menubar::MenubarEvent, pattern::Pattern};
-use crate::app::editor::{Editor, EditorCommand};
+use crate::app::editor::{Editor, EditorCommands};
 use eframe::egui;
 
 
@@ -17,6 +17,7 @@ pub struct PatternSeer {
     editor: Editor,
     /// Container for the pattern we are currently working on.
     pattern: Option<Pattern>,
+    /// Typestate machine containing the form used for creating a new pattern.
     pattern_creation_form: PatternCreationForm,
 }
 impl PatternSeer {
@@ -43,7 +44,7 @@ impl eframe::App for PatternSeer {
             MenubarEvent::OpenPattern { path } => {
                 self.pattern = match Pattern::open_sync(path.as_str()) {
                     Ok(pattern) => {
-                        self.editor.queue_cmd(EditorCommand::FitToPattern);
+                        self.editor.queue_cmd(EditorCommands::FitToPattern);
                         Some(pattern)
                     },
                     Err(e) => {
@@ -53,9 +54,8 @@ impl eframe::App for PatternSeer {
                 }
             },
             MenubarEvent::CloseWindow => ui.send_viewport_cmd(egui::ViewportCommand::Close),
-
             // View events
-            MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommand::FitToPattern),
+            MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommands::FitToPattern),
 
             MenubarEvent::DoNothing => {}
         }
@@ -66,7 +66,7 @@ impl eframe::App for PatternSeer {
             PatternCreationForm::TakenForEdit => unreachable!(),
             PatternCreationForm::Done(_) => {
                 self.pattern = Some(self.pattern_creation_form.take_finished_pattern());
-                self.editor.queue_cmd(EditorCommand::FitToPattern);
+                self.editor.queue_cmd(EditorCommands::FitToPattern);
             },
         }
 
