@@ -1,4 +1,5 @@
-use crate::app::pattern_creation_form::PatternCreationForm;
+use crate::app::forms::FormTSM;
+use crate::app::pattern_creation_form::PatternFormEvent;
 use crate::pattern::PatternDraft;
 use crate::{app::menubar::MenubarEvent, pattern::Pattern};
 use crate::app::editor::{Editor, EditorCommands};
@@ -7,7 +8,7 @@ use eframe::egui;
 
 mod menubar;
 mod editor;
-mod forms;
+pub mod forms;
 mod pattern_creation_form;
 
 
@@ -18,7 +19,7 @@ pub struct PatternSeer {
     /// Container for the pattern we are currently working on.
     pattern: Option<Pattern>,
     /// Typestate machine containing the form used for creating a new pattern.
-    pattern_creation_form: PatternCreationForm,
+    pattern_creation_form: FormTSM<PatternDraft>,
 }
 impl PatternSeer {
     /// Creates a new instance of PatternSeer.
@@ -32,7 +33,7 @@ impl PatternSeer {
         PatternSeer {
             editor: Editor::new(),
             pattern: None,
-            pattern_creation_form: PatternCreationForm::Closed,
+            pattern_creation_form: FormTSM::new(),
         }
     }
 }
@@ -40,7 +41,15 @@ impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
         match menubar::show(ui, frame) {
             // File events
-            MenubarEvent::CreatePattern => self.pattern_creation_form.open(),
+            MenubarEvent::CreatePattern => {
+                self.pattern_creation_form.transition_with(|state| {
+                    match state {
+                        FormTSM::Closed(inner) => inner.open(PatternDraft::new()).save_state(),
+                        _ => state
+                    }
+                });
+                self.editor.queue_cmd(EditorCommands::FitToPattern);
+            },
             MenubarEvent::OpenPattern { path } => {
                 self.pattern = match Pattern::open_sync(path.as_str()) {
                     Ok(pattern) => {
@@ -60,15 +69,24 @@ impl eframe::App for PatternSeer {
             MenubarEvent::DoNothing => {}
         }
 
-        match &mut self.pattern_creation_form {
-            PatternCreationForm::Closed => {},
-            PatternCreationForm::PendingEdits(_) => self.pattern_creation_form.show(ui),
-            PatternCreationForm::TakenForEdit => unreachable!(),
-            PatternCreationForm::Done(_) => {
-                self.pattern = Some(self.pattern_creation_form.take_finished_pattern());
-                self.editor.queue_cmd(EditorCommands::FitToPattern);
-            },
-        }
+        self.pattern_creation_form.transition_with(|state| {
+            match state {
+                FormTSM::Closed(inner) => inner.save_state(), // Do nothing
+                FormTSM::Pending(inner) => {
+                    let (inner, draft) = inner.take_for_edits();
+                    match pattern_creation_form::show(ui, draft) {
+                        PatternFormEvent::FormUpdated(draft) => inner.submit_draft(draft).save_state(),
+                        PatternFormEvent::FormComplete(pattern) => {
+                            self.pattern = Some(pattern);
+                            inner.close_as_done().save_state()
+                        },
+                        PatternFormEvent::FormCancelled => inner.close_as_cancelled().save_state(),
+                        PatternFormEvent::NothingHappened => panic!("Something went wrong with the pattern creation form.")
+                    }
+                },
+                FormTSM::Transitioning(_) => unreachable!(),
+            }
+        });
 
         if let Some(pattern) = &mut self.pattern {
             self.editor.show(ui, frame, pattern);

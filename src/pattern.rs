@@ -1,7 +1,7 @@
 use std::{path::Path, str::FromStr};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use tokio::runtime::Runtime;
-
+use crate::app::forms::FormDraft;
 
 #[derive(Debug, Clone)]
 pub struct PatternDraft {
@@ -17,6 +17,20 @@ impl PatternDraft {
             path: None,
         }
     }
+}
+impl FormDraft for PatternDraft {
+    type Complete = Pattern;
+    type Error = PatternError;
+
+    fn finish(&self) -> Result<Self::Complete, Self::Error>{
+        Pattern::from_draft(self.clone()).map_err(|e| {
+            PatternError::SQLError(e)
+        })
+    }
+}
+#[derive(Debug)]
+pub enum PatternError {
+    SQLError(sqlx::Error)
 }
 
 #[derive(Debug)]

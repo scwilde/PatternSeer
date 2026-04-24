@@ -31,10 +31,6 @@ mod sealed {
     /// The draft has been pulled out in order to be edited.
     #[derive(Debug)]
     pub struct TakenForEdits;
-    /// The form is fully filled out and ready to be closed. Stores an instance of type that the draft turns
-    /// into when completed.
-    #[derive(Debug)]
-    pub struct Completed<D: FormDraft>(D::Complete);
     /// The form is currently in the middle of transitioning to another state. This lets the form act as a passive
     /// mutex if multiple threads try to modify it at once. This state is unable to transition itself to another state.
     #[derive(Debug)]
@@ -78,24 +74,6 @@ mod sealed {
         }
     }
 
-    impl<D: FormDraft> Completed<D> {
-        /// Takes ownership of the `FormDraft::Completed` contained within and closes the form.
-        ///
-        /// # Returns
-        ///
-        /// A tuple containing
-        /// - A new `Closed` typestate.
-        /// - The `FormDraft::Completed` contained within.
-        pub fn close_as_done(self) -> (Closed, D::Complete) {
-            (Closed, self.0)
-        }
-
-        /// Wraps this typestate up in its corresponding `FormTSM` enum variant.
-        pub fn save_state(self) -> FormTSM<D> {
-            FormTSM::Completed(self)
-        }
-    }
-
     impl TakenForEdits {
         /// Submits an edited draft, but keeps the form open to more edits.
         ///
@@ -110,17 +88,13 @@ mod sealed {
             Pending(draft)
         }
 
-        /// Submits the finalized version of the draft and signals that the form should be closed.
-        ///
-        /// # Parameters
-        ///
-        /// - `complete`: A `FormDraft::Completed` representing the finalized version of the form.
+        /// Assumes the draft has been finalized and closes the form.
         ///
         /// # Returns
         ///
-        /// A new `Completed` typestate containing `complete`.
-        pub fn submit_complete<D: FormDraft>(self, complete: D::Complete) -> Completed<D> {
-            Completed(complete)
+        /// A new `Closed` typestate.
+        pub fn close_as_done(self) -> Closed {
+            Closed
         }
 
         /// Discards the draft completely and closes the form.
@@ -254,12 +228,11 @@ pub enum FormTSM<D: FormDraft> {
     Closed(sealed::Closed),
     Pending(sealed::Pending<D>),
     Transitioning(sealed::Transitioning),
-    Completed(sealed::Completed<D>),
 }
 impl<D: FormDraft> FormTSM<D> {
     ///Creates a new form in the `Closed` state.
     pub fn new() -> Self {
-        Self::Closed(sealed::Closed {})
+        Self::Closed(sealed::Closed)
     }
 
     /// Sets the state of `self` to `Transitioning` and provides ownership of the old state to the passed closure.
