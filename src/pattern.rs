@@ -1,7 +1,6 @@
-use std::{path::Path, str::FromStr};
+use std::{fmt, io, path::Path, str::FromStr};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use tokio::runtime::Runtime;
-use crate::app::forms::FormDraft;
 
 #[derive(Debug, Clone)]
 pub struct PatternDraft {
@@ -18,20 +17,21 @@ impl PatternDraft {
         }
     }
 }
-impl FormDraft for PatternDraft {
-    type Complete = Pattern;
-    type Error = PatternError;
 
-    fn finish(&self) -> Result<Self::Complete, Self::Error>{
-        Pattern::from_draft(self.clone()).map_err(|e| {
-            PatternError::SQLError(e)
-        })
-    }
-}
 #[derive(Debug)]
 pub enum PatternError {
-    SQLError(sqlx::Error)
+    SQLError(sqlx::Error),
+    IOError(io::Error),
 }
+impl fmt::Display for PatternError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SQLError(e) => write!(f, "SQL Error: {}", e),
+            Self::IOError(e) => write!(f, "File IO Error: {}", e),
+        }
+    }
+}
+
 
 #[derive(Debug)]
 pub struct PatternMeta {
@@ -45,21 +45,20 @@ pub struct Pattern {
     pub db_pool: SqlitePool,
 }
 impl Pattern {
-    pub fn from_draft(draft: PatternDraft) -> sqlx::Result<Self> {
+    pub fn from_draft(draft: &PatternDraft) -> Result<Self, PatternError> {
         let path = draft.path.as_ref().unwrap().as_str();
         let path_obj = Path::new(path);
         if path_obj.exists() {
-            match std::fs::remove_file(path_obj) {
-                Ok(_) => {},
-                Err(_e) => { todo!() }
-            }
+            std::fs::remove_file(path_obj).map_err(|e| PatternError::IOError(e))?
         }
 
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
         rt.block_on(async {
-            let db_options = SqliteConnectOptions::from_str(path)?
+            let db_options = SqliteConnectOptions::from_str(path)
+                .map_err(|e| PatternError::SQLError(e))?
                 .create_if_missing(true);
-            let db_pool = SqlitePool::connect_with(db_options).await?;
+            let db_pool = SqlitePool::connect_with(db_options).await
+                .map_err(|e| PatternError::SQLError(e))?;
 
             sqlx::query(
                 r#"
@@ -71,7 +70,8 @@ impl Pattern {
                 "#
             )
             .execute(&db_pool)
-            .await?;
+            .await
+            .map_err(|e| PatternError::SQLError(e))?;
 
             sqlx::query!(
                 "INSERT INTO metadata (id, width, height) VALUES (0, ?, ?)",
@@ -79,7 +79,8 @@ impl Pattern {
                 draft.height,
             )
             .execute(&db_pool)
-            .await?;
+            .await
+            .map_err(|e| PatternError::SQLError(e))?;
 
             Ok(Self {
                 metadata: PatternMeta { width: draft.width, height: draft.height },
@@ -88,10 +89,11 @@ impl Pattern {
         })
     }
 
-    pub fn open_sync(path: &str) -> sqlx::Result<Self> {
+    pub fn open_sync(path: &str) -> Result<Self, PatternError> {
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
         rt.block_on(async {
-            let db_pool = SqlitePool::connect(path).await?;
+            let db_pool = SqlitePool::connect(path).await
+                .map_err(|e| PatternError::SQLError(e))?;
 
             let metadata = sqlx::query_as!(
                 PatternMeta,
@@ -99,7 +101,8 @@ impl Pattern {
                 "SELECT width AS 'width: i16', height AS 'height: i16' FROM metadata",
             )
             .fetch_one(&db_pool)
-            .await?;
+            .await
+            .map_err(|e| PatternError::SQLError(e))?;
 
             Ok(Self {metadata, db_pool})
         })

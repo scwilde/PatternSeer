@@ -57,6 +57,7 @@ impl eframe::App for PatternSeer {
                         Some(pattern)
                     },
                     Err(e) => {
+                        //TODO Bad UX
                         println!("Issue opening '{}': {}", path, e);
                         None
                     },

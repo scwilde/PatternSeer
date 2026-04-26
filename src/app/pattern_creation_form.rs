@@ -1,5 +1,5 @@
 use crate::{
-    app::forms::{FormDraft, FormTSM},
+    app::forms::FormTSM,
     pattern::{Pattern, PatternDraft},
 };
 use eframe::egui::{self, scroll_area::State};
@@ -59,11 +59,11 @@ pub fn show(ui: &mut egui::Ui, mut draft: PatternDraft) -> PatternFormEvent {
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
                 if ui.add_enabled(form_valid, egui::Button::new("Save")).clicked() {
-                    match draft.finish() {
+                    match Pattern::from_draft(&draft) {
                         Ok(pattern) => event = PatternFormEvent::FormComplete(pattern),
                         Err(e) => {
                             // TODO Bad UX
-                            println!("Issue saving pattern: {:?}", e);
+                            println!("Issue saving pattern: {}", e);
                             event = PatternFormEvent::FormUpdated(draft);
                         }
                     }

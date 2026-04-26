@@ -1,33 +1,12 @@
-/// The incomplete version of some type that is constructed via a form.
-pub trait FormDraft {
-    /// Enum with variants for that might be caused while editing the draft or while
-    /// turning the draft into its completed type.
-    type Error: std::fmt::Debug;
-    /// The type that this draft will turn into when the form is completed.
-    type Complete: std::fmt::Debug;
-
-    /// Transitions the draft into its completed form.
-    ///
-    /// # Returns
-    ///
-    /// A Result that can either be:
-    /// -`Ok(c)`: When the draft was successfully finalized, where c is the finalized form.
-    /// -'Err': When there was some issue in finalizing the draft, where e is what error happened.
-    fn finish(&self) -> Result<Self::Complete, Self::Error>
-    where
-        Self: Sized;
-}
-
-
 mod sealed {
-    use crate::app::forms::{FormTSM, FormDraft};
+    use crate::app::forms::FormTSM;
 
     /// The form is currently closed to editing.
     #[derive(Debug)]
     pub struct Closed;
     /// The form is currently open and awaiting new edits. Stores the incomplete draft of the form.
     #[derive(Debug)]
-    pub struct Pending<D: FormDraft>(D);
+    pub struct Pending<D>(D);
     /// The draft has been pulled out in order to be edited.
     #[derive(Debug)]
     pub struct TakenForEdits;
@@ -46,17 +25,17 @@ mod sealed {
         /// # Returns
         ///
         /// A new `Pending` typestate containing `new_draft`.
-        pub fn open<D: FormDraft>(self, new_draft: D) -> Pending<D> {
+        pub fn open<D>(self, new_draft: D) -> Pending<D> {
             Pending(new_draft)
         }
 
         /// Wraps this typestate up into its corresponding `FormTSM` enum variant.
-        pub fn save_state<D: FormDraft>(self) -> FormTSM<D> {
+        pub fn save_state<D>(self) -> FormTSM<D> {
             FormTSM::Closed(self)
         }
     }
 
-    impl<D: FormDraft> Pending<D> {
+    impl<D> Pending<D> {
         /// Takes ownership of the `FormDraft` stored within in order to make edits.
         ///
         /// # Returns
@@ -84,7 +63,7 @@ mod sealed {
         /// # Returns
         ///
         /// A new `Pending` typestate containing `draft`.
-        pub fn submit_draft<D: FormDraft>(self, draft: D) -> Pending<D> {
+        pub fn submit_draft<D>(self, draft: D) -> Pending<D> {
             Pending(draft)
         }
 
@@ -224,12 +203,12 @@ mod sealed {
 /// required to return a `FormTSM` it is also impossible to accidentally drop the internal typestate and lock
 /// the `FormTSM` into `Transitioning` forever.
 #[derive(Debug)]
-pub enum FormTSM<D: FormDraft> {
+pub enum FormTSM<D> {
     Closed(sealed::Closed),
     Pending(sealed::Pending<D>),
     Transitioning(sealed::Transitioning),
 }
-impl<D: FormDraft> FormTSM<D> {
+impl<D> FormTSM<D> {
     ///Creates a new form in the `Closed` state.
     pub fn new() -> Self {
         Self::Closed(sealed::Closed)
