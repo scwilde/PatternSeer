@@ -9,7 +9,14 @@
 
 --- Current Work: Pattern loading & Rendering ---
 -[] Migrate from SQLite to a chunked binary file format
-
+    -[X] pattern file module
+        -[X] save function
+        -[X] load function
+    -[] Update Documentation
+    -[] Refactor Pattern
+    -[] Make menubar open button use load function
+    -[] Make a menubar save button that uses the save function
+    -[] Make menubar new function use the save function
 
 -[] create a test pattern with some cells filled
 -[] Set pattern max size to 4096 x 4096

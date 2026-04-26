@@ -1,11 +1,15 @@
-use std::{fmt, io, path::Path, str::FromStr};
+use std::{fmt, io, path::{Path, PathBuf}, str::FromStr};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use tokio::runtime::Runtime;
 
+
+// mod pattern_file;
+
+
 #[derive(Debug, Clone)]
 pub struct PatternDraft {
-    pub width: i16,
-    pub height: i16,
+    pub width: u16,
+    pub height: u16,
     pub path: Option<String>
 }
 impl PatternDraft {
@@ -35,8 +39,8 @@ impl fmt::Display for PatternError {
 
 #[derive(Debug)]
 pub struct PatternMeta {
-    pub width: i16,
-    pub height: i16,
+    pub width: u16,
+    pub height: u16,
 }
 
 #[derive(Debug)]
@@ -98,7 +102,7 @@ impl Pattern {
             let metadata = sqlx::query_as!(
                 PatternMeta,
                 // * `AS i16` is safe here as `width` and `height` are CHECKed to be {0 < x <= 16,384}
-                "SELECT width AS 'width: i16', height AS 'height: i16' FROM metadata",
+                "SELECT width AS 'width: u16', height AS 'height: u16' FROM metadata",
             )
             .fetch_one(&db_pool)
             .await

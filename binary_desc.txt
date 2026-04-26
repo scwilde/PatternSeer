@@ -1,12 +1,12 @@
 v1.0
 
 # Philosophy
-The philosophy of this file format is to try and ensure that user-created data is kept as safe as possible as patternseer grows and changes. If possible, 100% forwards and backwards compatibility is the goal, or if not possible then easy conversion from one major schema to another is desirable.
+The philosophy of this file format is to try and ensure that user-created data is kept as safe as possible as patternseer grows and changes, while maintaining 100% forwards and backwards compatibility if possible.
 
 # Header
 `[magic: 6x u8]`: `0x00 PsPat`.
 `[version: 2x u8]`: Major and minor schema version.
-`[crc32: u32]`: CRC-32 checksum to verify pattern is not corrupted
+`[crc32: u32]`: CRC-32 checksum to verify pattern is not corrupted.
 `[width: u16]`: Width of the pattern grid.
 `[height: u16]`: height of the pattern grid.
 
