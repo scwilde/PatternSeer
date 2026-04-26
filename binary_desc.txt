@@ -1,0 +1,61 @@
+v1.0
+
+# Philosophy
+The philosophy of this file format is to try and ensure that user-created data is kept as safe as possible as patternseer grows and changes. If possible, 100% forwards and backwards compatibility is the goal, or if not possible then easy conversion from one major schema to another is desirable.
+
+# Header
+`[magic: 6x u8]`: `0x00 PsPat`.
+`[version: 2x u8]`: Major and minor schema version.
+`[crc32: u32]`: CRC-32 checksum to verify pattern is not corrupted
+`[width: u16]`: Width of the pattern grid.
+`[height: u16]`: height of the pattern grid.
+
+# Chunks
+The following data is arranged in chunks, inspired somewhat by the PNG format.
+`[chunk_code: 4x u8]`: 4 Character chunk code used to describe what data is stored inside this chunk. The first character, if capitalized notes that this chunk must be read or else reject the file, and if not capitalized notes the chunk can be safely skipped. The second character, if capitalized denotes that a skipped chunk contains user-created data and should be stored at the end of the file in the `XTRA` chunk, and if not capitalized denotes the chunk as containing program-generated data which can and probably should be completely removed if not understood. Last two characters should be capitalized incase a use for them becomes apparent in the future.
+`[chunk_length: u32]`: Length of the chunk in bytes to allow skipping.
+`[chunk_data: N bytes]`: The actual data stored inside the chunk, described below
+
+## `META`
+Various metadata fields about the pattern. New fields added to metadata should be tacked onto the end of the chunk so that way an outdated reader will just read what it expects to find and then skip whatever remains of the chunk.
+`[pattern_name_len: u16]`: Length in bytes of the following `pattern_name` field.
+`[pattern_name: N bytes as utf-8]`: UTF-8 encoded string that contains a user-generated name for the pattern.
+
+## `STCH`
+Palette containing the different stitches used in the pattern.
+- `[stitch_count: u16]`: The number of stitches contained within the palette.
+- `[stitches: N bytes]`:
+    - `[stitch_type: u8]`: The type of stitch. Unrecognized stitch types should be loaded as a placeholder type.
+        - 1 = Full cross
+        - 2 = Half cross
+        - 3 = petite
+    - `[color_count: u8]`: Number of colors within this stitch.
+    - `[colors: N bytes]`:
+        - `[color_index: u8]`: Index into the `COLR` palette.
+        - `[thread_count: u8]`: Number of threads of this color.
+
+## `COLR`
+Palette containing the different thread colors used in the pattern.
+- `[color_count: u16]`: Number of colors used in the pattern
+- `[colors: N bytes]`:
+    - `[brand_code: 4x u8]`: 4 character ascii code to identify the brand of thread.
+    - `[color_code: 8x u8]`: 8 character ascii code to identify the color of thread within the brand.
+    - `[rgb: 3x u8]`: RGB color value of thread.
+
+## `PRIM`
+Primary stitch grid. Raster grid where each cell contains a `u16` index into `STCH`. Width and height defined by `width` and `height` fields in header.
+
+## `sCND`
+Secondary stitch grid containing extra non-raster stitch types such as backstitching & knots.
+SCHEMA TBD
+
+## `hiST`
+Undo history.
+SCHEMA TBD
+
+## `XTRA`
+Extra chunks that were unable to be loaded by outdated readers.
+Each chunk consists of
+`[original_chunk_code: 4x u8]`: Original code of the unknown chunk.
+`[original_chunk_length: u32]`: Length of the unknown chunk.
+`[original_chunk_bytes: N bytes]`: Bytes from the unkown chunk.
