@@ -1,11 +1,28 @@
-
-use std::{fs::File, io::{self, BufReader, BufWriter, Write}, path::Path};
+use std::{
+    fs::File,
+    io::{
+        self,
+        Read,
+        Write,
+    },
+    path::{Path, PathBuf},
+};
 use crate::pattern::Pattern;
 
 
-//? Need this to create a new pattern? Or does save() add all the binary structure on each save?
-// pub fn create() {}
-
+/// Writes the header section of pattern file.
+/// 
+/// # Parameters
+/// 
+/// - `writer`: File writer to write the header to.
+/// - `width`: Width of the pattern.
+/// - `height`: Height of the pattern.
+/// 
+/// # Returns
+/// 
+/// `io::Result` which can be either:
+/// - `Ok(())` when all is well.
+/// - `Err(io::Error)` If something went wrong while writing the header.
 fn write_header<W: io::Write>(writer: &mut W, width: u16, height: u16) -> io::Result<()> {
     writer.write_all(&[0])?;
     writer.write_all(b"PsPat")?;
@@ -15,9 +32,21 @@ fn write_header<W: io::Write>(writer: &mut W, width: u16, height: u16) -> io::Re
     Ok(())
 }
 
+/// Saves a pattern to disk.
+/// 
+/// # Parameters
+/// 
+/// - `path`: Pattern save location.
+/// - `pattern`: Pattern to be saved.
+/// 
+/// # Returns
+/// 
+/// `io::Result` which can be either:
+/// - `Ok(())` when all is well.
+/// - `Err(io::Error)` If something went wrong while writing the file.
 pub fn save(path: &Path, pattern: &Pattern) -> io::Result<()> {
     let file = File::create(path)?;
-    let mut writer = BufWriter::new(file);
+    let mut writer = io::BufWriter::new(file);
     
     write_header(&mut writer, pattern.width, pattern.height)?;
     
@@ -25,6 +54,17 @@ pub fn save(path: &Path, pattern: &Pattern) -> io::Result<()> {
     Ok(())
 }
 
+/// Reads the header of a pattern file.
+/// 
+/// # Parameters
+/// 
+/// - `reader`: File reader to read the pattern from
+///
+/// # Returns
+/// 
+/// `io::Result` which can be either:
+/// - `Ok((width, height))` when all is well.
+/// - `Err(io::Error)` If something went wrong while reading the header.
 fn read_header<R: io::Read>(reader: &mut R) -> io::Result<(u16, u16)> {
     let mut magic = [0u8; 6];
     reader.read_exact(&mut magic)?;
@@ -43,11 +83,22 @@ fn read_header<R: io::Read>(reader: &mut R) -> io::Result<(u16, u16)> {
     Ok((u16::from_le_bytes(width_bytes), u16::from_le_bytes(height_bytes)))
 }
 
-pub fn load(path: &Path) -> io::Result<Pattern> {
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
+/// Loads a pattern from disk.
+/// 
+/// # Parameters
+/// 
+/// - `path`: Pattern location.
+/// 
+/// # Returns
+/// 
+/// `io::Result` which can be either:
+/// - `Ok(Pattern)` when all is well.
+/// - `Err(io::Error)` If something went wrong while reading the file.
+pub fn load(path: PathBuf) -> io::Result<Pattern> {
+    let file = File::open(&path)?;
+    let mut reader = io::BufReader::new(file);
     
     let (width, height) = read_header(&mut reader)?;
     
-    Ok(Pattern { width, height })
+    Ok(Pattern { width, height, path: Some(path) })
 }

@@ -203,8 +203,8 @@ pub fn render(
         Axis::X,
         grid_step,
         utils::bounds2d([
-            [0.0, pattern.metadata.width as f32],
-            [0.0, pattern.metadata.height as f32],
+            [0.0, pattern.width as f32],
+            [0.0, pattern.height as f32],
         ]),
     );
     let y_grids = GridlineIter::new(
@@ -213,8 +213,8 @@ pub fn render(
         Axis::Y,
         grid_step,
         utils::bounds2d([
-            [0.0, pattern.metadata.height as f32],
-            [0.0, pattern.metadata.width as f32],
+            [0.0, pattern.height as f32],
+            [0.0, pattern.width as f32],
         ]),
     );
 

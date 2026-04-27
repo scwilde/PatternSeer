@@ -25,11 +25,11 @@ impl Camera {
         let position_bounds = utils::Bounds2d {
             x: utils::Bounds {
                 min: ((self.viewport.x - margin) / (-2.0 * self.zoom)) + 1.0,
-                max: (pattern.metadata.width as f32) + ((self.viewport.x - margin) / (2.0 * self.zoom)) - 1.0,
+                max: (pattern.width as f32) + ((self.viewport.x - margin) / (2.0 * self.zoom)) - 1.0,
             },
             y: utils::Bounds {
                 min: ((self.viewport.y - margin) / (-2.0 * self.zoom)) + 1.0,
-                max: (pattern.metadata.height as f32) + ((self.viewport.y - margin) / (2.0 * self.zoom)) - 1.0,
+                max: (pattern.height as f32) + ((self.viewport.y - margin) / (2.0 * self.zoom)) - 1.0,
             },
         };
 
@@ -44,8 +44,8 @@ impl Camera {
     /// - `pattern`: `Pattern` used to determine how far the camera can zoom in or out based on its dimensions.
     pub fn limit_zoom(&mut self, pattern: &Pattern) {
         let margin = 50.0;
-        let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.metadata.width as f32;
-        let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.metadata.height as f32;
+        let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.width as f32;
+        let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.height as f32;
         let zoom_bounds = utils::Bounds {
             min: utils::minf(min_zoom_x, min_zoom_y),
             max: utils::minf(self.viewport.x, self.viewport.y) - (margin * 2.0),
@@ -96,11 +96,11 @@ impl Camera {
     /// - `pattern`: Pattern to fit inside of view.
     pub fn fit_to_pattern(&mut self, pattern: &Pattern) {
         let margin = 50.0;
-        let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.metadata.width as f32;
-        let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.metadata.height as f32;
+        let min_zoom_x = (self.viewport.x - (margin * 2.0)) / pattern.width as f32;
+        let min_zoom_y = (self.viewport.y - (margin * 2.0)) / pattern.height as f32;
         self.zoom = utils::minf(min_zoom_x, min_zoom_y);
 
-        self.position.x = (pattern.metadata.width as f32) / 2.0;
-        self.position.y = (pattern.metadata.height as f32) / 2.0;
+        self.position.x = (pattern.width as f32) / 2.0;
+        self.position.y = (pattern.height as f32) / 2.0;
     }
 }

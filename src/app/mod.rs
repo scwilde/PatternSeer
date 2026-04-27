@@ -1,6 +1,6 @@
 use crate::app::forms::FormTSM;
 use crate::app::pattern_creation_form::PatternFormEvent;
-use crate::pattern::PatternDraft;
+use crate::pattern::{pattern_file, PatternDraft};
 use crate::{app::menubar::MenubarEvent, pattern::Pattern};
 use crate::app::editor::{Editor, EditorCommands};
 use eframe::egui;
@@ -39,7 +39,7 @@ impl PatternSeer {
 }
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
-        match menubar::show(ui, frame) {
+        match menubar::show(ui, frame, &mut self.pattern) {
             // File events
             MenubarEvent::CreatePattern => {
                 self.pattern_creation_form.transition_with(|state| {
@@ -50,23 +50,38 @@ impl eframe::App for PatternSeer {
                 });
                 self.editor.queue_cmd(EditorCommands::FitToPattern);
             },
-            MenubarEvent::OpenPattern { path } => {
-                self.pattern = match Pattern::open_sync(path.as_str()) {
+            MenubarEvent::OpenPattern(path) => {
+                self.pattern = match pattern_file::load(path.clone()) {
                     Ok(pattern) => {
                         self.editor.queue_cmd(EditorCommands::FitToPattern);
                         Some(pattern)
                     },
                     Err(e) => {
                         //TODO Bad UX
-                        println!("Issue opening '{}': {}", path, e);
+                        println!("Issue opening '{}': {}", path.display(), e);
                         None
                     },
                 }
             },
+            MenubarEvent::SavePattern => {
+                if let Some(pattern) = &self.pattern && let Some(path) = &pattern.path {
+                    pattern_file::save(&path, &pattern).unwrap_or_else(|e| {
+                        println!("Issue saving pattern: {}", e);
+                    })
+                }
+            },
+            MenubarEvent::SavePatternAs(path) => {
+                if let Some(pattern) = &mut self.pattern {
+                    pattern.path = Some(path.clone());
+                    pattern_file::save(&path, &pattern).unwrap_or_else(|e| {
+                        println!("Issue saving pattern: {}", e);
+                    })
+                }
+            }
             MenubarEvent::CloseWindow => ui.send_viewport_cmd(egui::ViewportCommand::Close),
             // View events
             MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommands::FitToPattern),
-
+            // Other events
             MenubarEvent::DoNothing => {}
         }
 
@@ -79,6 +94,7 @@ impl eframe::App for PatternSeer {
                         PatternFormEvent::FormUpdated(draft) => inner.submit_draft(draft).save_state(),
                         PatternFormEvent::FormComplete(pattern) => {
                             self.pattern = Some(pattern);
+                            self.editor.queue_cmd(EditorCommands::FitToPattern);
                             inner.close_as_done().save_state()
                         },
                         PatternFormEvent::FormCancelled => inner.close_as_cancelled().save_state(),
