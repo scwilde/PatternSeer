@@ -14,9 +14,9 @@ mod pattern_creation_form;
 
 /// An instance of the application.
 pub struct PatternSeer {
-    /// The editor panel.
+    /// Pattern editing panel.
     editor: Editor,
-    /// Container for the pattern we are currently working on.
+    /// Currently opened pattern.
     pattern: Option<Pattern>,
     /// Typestate machine containing the form used for creating a new pattern.
     pattern_creation_form: FormTSM<PatternDraft>,

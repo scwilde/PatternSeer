@@ -1,16 +1,32 @@
-use crate::{
-    app::forms::FormTSM,
-    pattern::{Pattern, PatternDraft},
-};
-use eframe::egui::{self, scroll_area::State};
+use crate::pattern::{Pattern, PatternDraft};
+use eframe::egui;
 
 pub enum PatternFormEvent {
+    /// Nothing of note happened in the form.
     NothingHappened,
+    /// Form's "Cancel" button was pressed.
     FormCancelled,
+    /// Form was edited and was neither saved nor cancelled.
     FormUpdated(PatternDraft),
+    /// Form's "Save" button was pressed and the draft was successfully finalized.
     FormComplete(Pattern),
 }
 
+/// Shows the pattern creation form to the screen for one frame
+/// 
+/// # Parameters
+/// 
+/// - `ui`: Egui UI to display the form to.
+/// - `draft`: Draft version of the new pattern.
+/// 
+/// # Returns
+/// 
+/// `PatternFormEvent` which can be
+/// - `NothingHappened`: When no event happened in the form; usually means somethign went wrong.
+/// - `FormUpdated(updated_draft)`: When the form was neither saved nor cancelled.
+/// - `FormComplete(pattern)`: When the "Save" button was pressed and the draft was successfully finalized
+/// into an actual Pattern.
+/// - `FormCancelled`: When the "Cancel" button was pressed.
 pub fn show(ui: &mut egui::Ui, mut draft: PatternDraft) -> PatternFormEvent {
     let mut event = PatternFormEvent::NothingHappened;
 

@@ -2,7 +2,6 @@ use std::{
     fs::File,
     io::{
         self,
-        Read,
         Write,
     },
     path::{Path, PathBuf},
@@ -10,7 +9,7 @@ use std::{
 use crate::pattern::Pattern;
 
 
-/// Writes the header section of pattern file.
+/// Writes the header section of a pattern file.
 /// 
 /// # Parameters
 /// 

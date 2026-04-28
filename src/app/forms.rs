@@ -20,7 +20,7 @@ mod sealed {
         ///
         /// # Parameters
         ///
-        /// - `new_draft`: The starting `FormDraft` to open the form with.
+        /// - `new_draft`: The starting draft type to open the form with.
         ///
         /// # Returns
         ///
@@ -42,7 +42,7 @@ mod sealed {
         ///
         /// A tuple containing
         /// - A new `TakenForEdits` typestate.
-        /// - the `FormDraft` contained within.
+        /// - The `FormDraft` contained within.
         pub fn take_for_edits(self) -> (TakenForEdits, D) {
             (TakenForEdits, self.0)
         }
@@ -76,7 +76,7 @@ mod sealed {
             Closed
         }
 
-        /// Discards the draft completely and closes the form.
+        /// Assumes the the draft has been discarded and closes the form.
         ///
         /// # Returns
         ///
@@ -90,9 +90,8 @@ mod sealed {
 
 /// An enum wrapping around a typestate machine that describes the different states a form can be in.
 ///
-/// This typestate machine is designed to give all the safety of a normal typestate machine,
-/// preventing invalid state transitions.
-/// However, the enum wrapper gives the added bonus that an instance of this machine can live inside
+/// This state machine is designed to give all the safety of a normal typestate machine, preventing invalid state
+/// transitions. However, the enum wrapper gives the added bonus that an instance of this machine can live inside
 /// the field of a long-lived struct, like the main `App` struct, without having to shadow it when changing states.
 ///
 /// # States
@@ -101,7 +100,7 @@ mod sealed {
 ///
 /// The form is currently closed to editing.
 /// - `open(new_draft) -> Pending(new_draft)`: Open up the form to editing.
-/// - `save_state() -> FormTSM`: Wrap this state up into a `FormTSM` enum variant.
+/// - `save_state() -> FormTSM`: Wrap this state up into its corrsponding `FormTSM` enum variant.
 ///
 /// **Transitioning**
 ///
@@ -112,14 +111,7 @@ mod sealed {
 ///
 /// The form is currently open and awaiting new edits. Stores the incomplete draft of the form.
 /// - `take_for_edits() -> (TakenForEdits, draft)`: Take owndership of the draft stored within to make edits.
-/// - `save_state() -> FormTSM`: Wrap this state up into a `FormTSM` enum variant.
-///
-/// **Completed(complete)**
-///
-/// The form is fully filled out and ready to be closed. Stores an instance of type that the draft turns into when
-/// completed.
-/// - `close_as_done() -> (Closed, complete)`: Take the completed draft and close the form.
-/// - `save_state() -> FormTSM`: Wrap this state up into a `FormTSM` enum variant.
+/// - `save_state() -> FormTSM`: Wrap this state up into its corresponding `FormTSM` enum variant.
 ///
 /// **TakenForEdits**
 ///
@@ -127,14 +119,13 @@ mod sealed {
 ///
 /// The draft has been pulled out in order to be edited.
 /// - `submit_draft(draft) -> Pending(draft)`: Submit an edited draft, but keep the form open to more edits.
-/// - `submit_complete(complete) -> Complete(complete)`: Submit the finalized version of the draft and signal that the
-/// form should be closed.
-/// - `close_as_cancelled() -> Closed`: Discard the draft completely and close the form.
+/// - `close_as_done() -> Closed`: Assume the draft has been finalized and close the form.
+/// - `close_as_cancelled() -> Closed`: Assume the draft has been discarded and close the form.
 ///
 /// # Usage
 ///
 /// Start by creating a form object using `Form::<D>::new()`. This will create a new form in the `Closed` state.
-/// `D` here is your type that implements `FormDraft`.
+/// `D` here is your type that represents the draft version of a form.
 /// ```
 /// let example = Form::<ExampleDraft>::new();
 /// ```
@@ -144,7 +135,7 @@ mod sealed {
 /// scope inside of which we own the `FormTSM`.
 /// ```
 /// example.transition(|state| {
-///     // Transition state
+///     // `state` is the same `FormTSM` that was stored in `example` however this scope now owns it.
 /// });
 /// ```
 ///
@@ -194,13 +185,13 @@ mod sealed {
 ///
 /// # Safety
 ///
-/// Typestate safety is guaranteed by the internal `State` structs being sealed. This means there is no way to
-/// manually construct a `Form::Pending`, etc. because we can't construct their internal `Pending`, etc.
-/// This gives full control over state transitions to the internal `State` structs.
+/// Typestate safety is guaranteed by the internal typestate structs being sealed. This means there is no way to
+/// manually construct a `FormTSM::Pending`, etc. because we can't construct the internal `Pending`, etc.
+/// This gives full control over state transitions to the internal typestate structs.
 ///
 /// Additionally, thread safety is guaranteed with the `Transitioning` state acting as a passive mutex in case
 /// multiple threads try to change the state at the same time. Due to the closure inside of `.transition_with` being
-/// required to return a `FormTSM` it is also impossible to accidentally drop the internal typestate and lock
+/// required to return a `FormTSM`, it is also impossible to accidentally drop the internal typestate and lock
 /// the `FormTSM` into `Transitioning` forever.
 #[derive(Debug)]
 pub enum FormTSM<D> {
@@ -214,7 +205,7 @@ impl<D> FormTSM<D> {
         Self::Closed(sealed::Closed)
     }
 
-    /// Sets the state of `self` to `Transitioning` and provides ownership of the old state to the passed closure.
+    /// Sets the state of `self` to `FormTSM::Transitioning` and provides ownership of the old state to the passed closure.
     ///
     /// # Parameters
     ///

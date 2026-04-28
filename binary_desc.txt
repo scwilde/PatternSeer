@@ -4,22 +4,22 @@ v1.0
 The philosophy of this file format is to try and ensure that user-created data is kept as safe as possible as patternseer grows and changes, while maintaining 100% forwards and backwards compatibility if possible.
 
 # Header
-`[magic: 6x u8]`: `0x00 PsPat`.
-`[version: 2x u8]`: Major and minor schema version.
-`[crc32: u32]`: CRC-32 checksum to verify pattern is not corrupted.
-`[width: u16]`: Width of the pattern grid.
-`[height: u16]`: height of the pattern grid.
+- `[magic: 6x u8]`: `0x00 PsPat`.
+- `[version: 2x u8]`: Major and minor schema version.
+- `[crc32: u32]`: CRC-32 checksum to verify pattern is not corrupted.
+- `[width: u16]`: Width of the pattern grid.
+- `[height: u16]`: height of the pattern grid.
 
 # Chunks
 The following data is arranged in chunks, inspired somewhat by the PNG format.
-`[chunk_code: 4x u8]`: 4 Character chunk code used to describe what data is stored inside this chunk. The first character, if capitalized notes that this chunk must be read or else reject the file, and if not capitalized notes the chunk can be safely skipped. The second character, if capitalized denotes that a skipped chunk contains user-created data and should be stored at the end of the file in the `XTRA` chunk, and if not capitalized denotes the chunk as containing program-generated data which can and probably should be completely removed if not understood. Last two characters should be capitalized incase a use for them becomes apparent in the future.
-`[chunk_length: u32]`: Length of the chunk in bytes to allow skipping.
-`[chunk_data: N bytes]`: The actual data stored inside the chunk, described below
+- `[chunk_code: 4x u8]`: 4 Character chunk code used to describe what data is stored inside this chunk. The first character, if capitalized notes that this chunk must be read or else reject the file, and if not capitalized notes the chunk can be safely skipped. The second character, if capitalized denotes that a skipped chunk contains user-created data and should be stored at the end of the file in the `XTRA` chunk, and if not capitalized denotes the chunk as containing program-generated data which can and probably should be completely removed if not understood. Last two characters should be capitalized incase a use for them becomes apparent in the future.
+- `[chunk_length: u32]`: Length of the chunk in bytes to allow skipping.
+- `[chunk_data: N bytes]`: The actual data stored inside the chunk, described below
 
 ## `META`
 Various metadata fields about the pattern. New fields added to metadata should be tacked onto the end of the chunk so that way an outdated reader will just read what it expects to find and then skip whatever remains of the chunk.
-`[pattern_name_len: u16]`: Length in bytes of the following `pattern_name` field.
-`[pattern_name: N bytes as utf-8]`: UTF-8 encoded string that contains a user-generated name for the pattern.
+- `[pattern_name_len: u16]`: Length in bytes of the following `pattern_name` field.
+- `[pattern_name: N bytes as utf-8]`: UTF-8 encoded string that contains a user-generated name for the pattern.
 
 ## `STCH`
 Palette containing the different stitches used in the pattern.

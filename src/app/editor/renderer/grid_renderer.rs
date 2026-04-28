@@ -33,7 +33,7 @@ struct Gridline {
     axis: Axis,
 }
 impl Gridline {
-    /// Generates the clip space vertices of the `Gridline`.
+    /// Generates the clip space vertices of this gridline.
     ///
     /// # Parameters
     ///
@@ -41,7 +41,7 @@ impl Gridline {
     ///
     /// # Returns
     ///
-    /// 6 black vertices, which make up two black triangles, which make up the quad for this `Gridline`.
+    /// A black `Quad` that makes up this gridline.
     fn draw(&self, camera: &Camera) -> Quad {
         match self.axis {
             Axis::X => {
@@ -104,11 +104,11 @@ struct GridlineIter {
     pattern_bb: utils::Bounds2d<f32>,
     /// How many world position units between each gridline.
     step: f32,
-    /// World position of the next `Gridline` to generate.
+    /// World position of the next gridline to generate.
     next: f32,
-    /// `Axis` along which to disperse the `Gridline`s.
+    /// `Axis` along which to disperse the gridlines.
     axis: Axis,
-    /// Have we drawn the final `Gridline`?
+    /// Have we drawn the final gridline?
     done: bool,
 }
 impl GridlineIter {
@@ -118,9 +118,9 @@ impl GridlineIter {
     ///
     /// - `min`: Minimum gridline in world space to draw along axis.
     /// - `max`: Maximum gridline in world space to draw along axis.
-    /// - `axis`: Axis alongw hich to distribute gridlines.
+    /// - `axis`: Axis along which to distribute gridlines.
     /// - `step`: How many world space units between each gridline.
-    /// - `pll_pattern_min`: 2D bounding box of pattern in world space. `x` is parallel to `axis`, `y` is perpendicular.
+    /// - `pattern_bb`: 2D bounding box of pattern in world space. `x` is parallel to `axis`, `y` is perpendicular.
     fn new(min: f32, max: f32, axis: Axis, step: f32, pattern_bb: utils::Bounds2d<f32>) -> Self {
         Self {
             min: utils::maxf(min, pattern_bb.x.min),
@@ -170,7 +170,7 @@ impl Iterator for GridlineIter {
     }
 }
 
-/// Generates the pattern's grid and provides it to `callback_resources`
+/// Generates the pattern's grid and provides it to `callback_resources`.
 ///
 /// # Parameters
 ///
@@ -186,17 +186,17 @@ pub fn render(
     camera: &Camera,
     pattern: &Pattern,
 ) -> GridRendererCallback {
+    // Start by filling background with a white Quad
     let mut geom = vec![];
-    // Start by filling background with a white rectangle.
     geom.push(Quad::from_bb(
         utils::bounds2d([[-1.0, 1.0], [-1.0, 1.0]]),
         Color::WHITE,
     ));
 
-    // Calculate grid LoD level based on camera zoom.
+    // Calculate grid LoD level based on camera zoom
     let grid_step = 10.0_f32.powi((((5.0 / camera.zoom).log10() + 1.0).floor() as i32).max(0));
 
-    // Create iterators for gridlines currently in view.
+    // Create iterators for gridlines currently in view
     let x_grids = GridlineIter::new(
         (camera.position[0] - (camera.viewport.x / (2.0 * camera.zoom))).ceil(),
         (camera.position[0] + (camera.viewport.x / (2.0 * camera.zoom))).floor(),
@@ -218,7 +218,7 @@ pub fn render(
         ]),
     );
 
-    // Iterate over all gridlines in view.
+    // Iterate over all gridlines in view
     for x_line in x_grids {
         geom.push(x_line.draw(camera));
     }
@@ -234,7 +234,7 @@ pub fn render(
     GridRendererCallback {}
 }
 
-/// Callback struct used by egui to draw our rendered scene into a panel.
+/// Callback struct used by egui to draw our rendered grid into a panel.
 #[derive(Clone, Copy)]
 pub struct GridRendererCallback {}
 impl egui_wgpu::CallbackTrait for GridRendererCallback {
@@ -276,7 +276,6 @@ impl egui_wgpu::CallbackTrait for GridRendererCallback {
                 vertex_buffer.slice(buffer_pos.offset_bytes..buffer_pos.len_bytes),
             );
             render_pass.draw(buffer_pos.offset_verts..buffer_pos.len_verts, 0..1);
-            // render_context.frame_timer.check_out(TypeId::of::<Self>());
         }
     }
 }

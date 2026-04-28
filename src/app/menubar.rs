@@ -4,14 +4,21 @@ use crate::pattern::Pattern;
 
 /// Events caused by interactions with the menubar.
 pub enum MenubarEvent {
+    // File > New
     CreatePattern,
+    // File > Open
     OpenPattern(PathBuf),
+    // File > Save
     SavePattern,
+    // File > Save As...
     SavePatternAs(PathBuf),
+    // File > Close
     CloseWindow,
     
+    // View > Fit to Pattern
     FitToPattern,
 
+    // No menubutton was clicked this frame
     DoNothing,
 }
 
@@ -58,9 +65,7 @@ pub fn show(
                 if ui.button("Quit").clicked() { event = MenubarEvent::CloseWindow }
             });
             ui.menu_button("View", |ui| {
-                if ui.button("Fit to pattern").clicked() {
-                    event = MenubarEvent::FitToPattern;
-                }
+                if ui.button("Fit to pattern").clicked() { event = MenubarEvent::FitToPattern }
             })
         });
     });
