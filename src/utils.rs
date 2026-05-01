@@ -85,3 +85,37 @@ where
         },
     }
 }
+
+
+pub trait CommandBuffer {
+    type Command;
+    fn push(&mut self, cmd: Self::Command) -> Option<Self::Command>;
+    fn new() -> Self;
+}
+
+pub enum CommandSlot<T> {
+    Inactive,
+    Active(T),
+}
+impl<T> CommandSlot<T> {
+    pub fn take(&mut self) -> Option<T> {
+        match std::mem::replace(self, Self::Inactive) {
+            Self::Inactive => None,
+            Self::Active(inner) => Some(inner),
+        }
+    }
+
+    pub fn query(&mut self) -> Option<&T> {
+        match self {
+            Self::Inactive => None,
+            Self::Active(inner) => Some(inner),
+        }
+    }
+
+    pub fn replace(&mut self, msg: T) -> Option<T> {
+        match std::mem::replace(self, Self::Active(msg)) {
+            Self::Inactive => None,
+            Self::Active(inner) => Some(inner),
+        }
+    }
+}

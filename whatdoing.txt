@@ -12,6 +12,7 @@
 -[] Add back a draft trait to FormTSM to improve documentation
 -[] Document functions with side effects
 -[] `NothingHappened` is an irrelevant PatternFormEvent variant
+-[X] Create CommandQueue struct that wraps a HashMap that hashes an enum variant discriminant to an instance of that variant
 
 --- House Keeping ---
 -[] Update Documentation

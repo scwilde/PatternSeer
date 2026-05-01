@@ -1,11 +1,9 @@
-use std::collections::HashSet;
-
 use crate::{
     app::editor::{
         camera::Camera,
         renderer::EditorRenderContext,
     },
-    pattern::Pattern,
+    pattern::Pattern, utils::{self, CommandBuffer},
 };
 use eframe::{egui, egui_wgpu};
 
@@ -15,22 +13,40 @@ mod camera;
 
 
 /// Commands passed to the editor by other GUI elements drawn first in the frame.
-#[derive(Eq, Hash, PartialEq)]
-pub enum EditorCommands {
+pub enum EditorCommand {
     FitToPattern,
+}
+
+struct EditorCommandBuffer {
+    pub fit_to_pattern: utils::CommandSlot<()>,
+}
+impl utils::CommandBuffer for EditorCommandBuffer {
+    type Command = EditorCommand;
+
+    fn new() -> Self {
+        Self {
+            fit_to_pattern: utils::CommandSlot::Inactive,
+        }
+    }
+
+    fn push(&mut self, cmd: Self::Command) -> Option<Self::Command> {
+        match cmd {
+            EditorCommand::FitToPattern => self.fit_to_pattern.replace(()).map(|_| EditorCommand::FitToPattern)
+        }
+    }
 }
 
 
 /// The main panel on screen where a pattern can be seen and edited.
 pub struct Editor {
     camera: Camera,
-    pending_cmds: HashSet<EditorCommands>,
+    pending_cmds: EditorCommandBuffer,
 }
 impl Editor {
     pub fn new() -> Self {
         Self {
             camera: Camera::default(),
-            pending_cmds: HashSet::new(),
+            pending_cmds: EditorCommandBuffer::new(),
         }
     }
 
@@ -51,7 +67,7 @@ impl Editor {
             // Create our rendering canvas filling all available space
             let (rect, response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
             self.camera.resize(rect.width(), rect.height());
-            if self.pending_cmds.remove(&EditorCommands::FitToPattern) {
+            if let Some(_) = self.pending_cmds.fit_to_pattern.take() {
                 self.camera.fit_to_pattern(pattern);
             }
 
@@ -83,7 +99,7 @@ impl Editor {
 
     /// Queues up a new `EditorCommands` variant for editor to act on in its next frame.
     /// Each variant will only be queued up once per frame.
-    pub fn queue_cmd(&mut self, cmd: EditorCommands) {
-        self.pending_cmds.insert(cmd);
+    pub fn queue_cmd(&mut self, cmd: EditorCommand) {
+        self.pending_cmds.push(cmd);
     }
 }

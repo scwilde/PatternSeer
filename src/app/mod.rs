@@ -2,7 +2,7 @@ use crate::app::forms::FormTSM;
 use crate::app::pattern_creation_form::PatternFormEvent;
 use crate::pattern::{pattern_file, PatternDraft};
 use crate::{app::menubar::MenubarEvent, pattern::Pattern};
-use crate::app::editor::{Editor, EditorCommands};
+use crate::app::editor::{Editor, EditorCommand};
 use eframe::egui;
 
 
@@ -10,7 +10,6 @@ mod menubar;
 mod editor;
 pub mod forms;
 mod pattern_creation_form;
-
 
 /// An instance of the application.
 pub struct PatternSeer {
@@ -48,12 +47,12 @@ impl eframe::App for PatternSeer {
                         _ => state
                     }
                 });
-                self.editor.queue_cmd(EditorCommands::FitToPattern);
+                self.editor.queue_cmd(EditorCommand::FitToPattern);
             },
             MenubarEvent::OpenPattern(path) => {
                 self.pattern = match pattern_file::load(path.clone()) {
                     Ok(pattern) => {
-                        self.editor.queue_cmd(EditorCommands::FitToPattern);
+                        self.editor.queue_cmd(EditorCommand::FitToPattern);
                         Some(pattern)
                     },
                     Err(e) => {
@@ -80,7 +79,7 @@ impl eframe::App for PatternSeer {
             }
             MenubarEvent::CloseWindow => ui.send_viewport_cmd(egui::ViewportCommand::Close),
             // View events
-            MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommands::FitToPattern),
+            MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommand::FitToPattern),
             // Other events
             MenubarEvent::DoNothing => {}
         }
@@ -94,7 +93,7 @@ impl eframe::App for PatternSeer {
                         PatternFormEvent::FormUpdated(draft) => inner.submit_draft(draft).save_state(),
                         PatternFormEvent::FormComplete(pattern) => {
                             self.pattern = Some(pattern);
-                            self.editor.queue_cmd(EditorCommands::FitToPattern);
+                            self.editor.queue_cmd(EditorCommand::FitToPattern);
                             inner.close_as_done().save_state()
                         },
                         PatternFormEvent::FormCancelled => inner.close_as_cancelled().save_state(),
