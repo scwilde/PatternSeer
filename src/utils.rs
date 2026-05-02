@@ -87,17 +87,52 @@ where
 }
 
 
+/// A struct which contains indicators for various deferred commands. Each field should be a `CommandSlot`
+/// with any data the command might need contained within it. Command slots are activated by calling `push()` and
+/// passing in the equivalent `Command` variant. 
 pub trait CommandBuffer {
+    /// Enum containing all variants that correspond to the various commands this buffer can consume.
     type Command;
+
+    /// Pushes a new command to the buffer.
+    /// 
+    /// # Parameters
+    /// 
+    /// - `cmd`: The `Command` variant to push into the buffer. May contian data.
+    /// 
+    /// # Returns
+    /// 
+    /// - `None`: if the slot corresponding to the passed command was inactive.
+    /// - `Some`: If the slot was already active. Contains the same command passed but with ownership of
+    /// the data previously stored within the slot.
+    /// 
+    /// # Side Effects
+    /// 
+    /// If inactive, the command slot corresponsing to the passed command will be activated and will take ownership
+    /// of the data contained within the passed command. If active, the data inside the command slot will be replaced
+    /// with the data in the passed command.
     fn push(&mut self, cmd: Self::Command) -> Option<Self::Command>;
+
+    /// Creates a new `CommandBuffer` with all command slots inactive.
     fn new() -> Self;
 }
 
+/// A slot for a deferred command.
 pub enum CommandSlot<T> {
+    /// The command does not need to be acted on right now.
     Inactive,
+    /// The command should be acted on at earliest convenience. Contains any data that should be acted with.
     Active(T),
 }
 impl<T> CommandSlot<T> {
+    #![allow(dead_code)]
+
+    /// Deactivates the command slot and pulls out the data passed to the command.
+    /// 
+    /// # Returns
+    /// 
+    /// - `None`: If the slot is inactive.
+    /// - `Some`: If the slot is active. Contains the data to given to the command.
     pub fn take(&mut self) -> Option<T> {
         match std::mem::replace(self, Self::Inactive) {
             Self::Inactive => None,
@@ -105,15 +140,31 @@ impl<T> CommandSlot<T> {
         }
     }
 
-    pub fn query(&mut self) -> Option<&T> {
+    /// Checks if a command is active without deactivating it.
+    /// 
+    /// # Returns
+    /// 
+    /// - `None`: If the slot is not active.
+    /// - `Some`: If the slot is active. Contains a reference to the data given to the command.
+    pub fn query(&self) -> Option<&T> {
         match self {
             Self::Inactive => None,
             Self::Active(inner) => Some(inner),
         }
     }
 
-    pub fn replace(&mut self, msg: T) -> Option<T> {
-        match std::mem::replace(self, Self::Active(msg)) {
+    /// Activates a command slot if inactive.
+    /// 
+    /// # Parameters
+    /// 
+    /// - `data`: Data to give to the command when activating the slot.
+    /// 
+    /// # Returns
+    /// 
+    /// - `None`: If the slot was previously inactive.
+    /// - `Some`: If the slot was already active. Contains the data previously given to the command.
+    pub fn activate(&mut self, data: T) -> Option<T> {
+        match std::mem::replace(self, Self::Active(data)) {
             Self::Inactive => None,
             Self::Active(inner) => Some(inner),
         }

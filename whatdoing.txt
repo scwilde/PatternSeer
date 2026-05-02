@@ -9,13 +9,14 @@
 -[] remove passing the pattern to menubar and instead just pass a boolean for if the pattern is present
 -[] Decouple Pattern from Camera's `limit_pan()`, `limit_zoom()`, and `fit_to_pattern()` functions
 -[] Remove the gridline struct and have GridlineIter just emit Quads
--[] Add back a draft trait to FormTSM to improve documentation
--[] Document functions with side effects
+-[] Add back a Draft trait to FormTSM to improve documentation
+-[] Document functions' side effects
 -[] `NothingHappened` is an irrelevant PatternFormEvent variant
--[X] Create CommandQueue struct that wraps a HashMap that hashes an enum variant discriminant to an instance of that variant
+-[X] Create CommandBuffer struct
+-[] 
 
 --- House Keeping ---
--[] Update Documentation
+-[X] Update Documentation
 
 
 --- Current Work: Pattern loading & Rendering ---

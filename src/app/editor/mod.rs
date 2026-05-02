@@ -12,12 +12,15 @@ pub mod renderer;
 mod camera;
 
 
-/// Commands passed to the editor by other GUI elements drawn first in the frame.
+/// Commands passed to the editor from other GUI elements.
 pub enum EditorCommand {
+    /// Adjust camera position and zoom so the entire pattern fits in view.
     FitToPattern,
 }
 
+/// Tracker for which commands are currently active and which are inactive.
 struct EditorCommandBuffer {
+    /// Adjust camera position and zoom so the entire pattern fits in view.
     pub fit_to_pattern: utils::CommandSlot<()>,
 }
 impl utils::CommandBuffer for EditorCommandBuffer {
@@ -31,7 +34,7 @@ impl utils::CommandBuffer for EditorCommandBuffer {
 
     fn push(&mut self, cmd: Self::Command) -> Option<Self::Command> {
         match cmd {
-            EditorCommand::FitToPattern => self.fit_to_pattern.replace(()).map(|_| EditorCommand::FitToPattern)
+            EditorCommand::FitToPattern => self.fit_to_pattern.activate(()).map(|_| EditorCommand::FitToPattern)
         }
     }
 }
@@ -98,7 +101,7 @@ impl Editor {
     }
 
     /// Queues up a new `EditorCommands` variant for editor to act on in its next frame.
-    /// Each variant will only be queued up once per frame.
+    /// Each variant will only be queued up once per frame, with the most recent call overwriting the previous.
     pub fn queue_cmd(&mut self, cmd: EditorCommand) {
         self.pending_cmds.push(cmd);
     }
