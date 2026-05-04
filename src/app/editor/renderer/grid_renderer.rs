@@ -6,7 +6,6 @@ use crate::{
                 geometry::{
                     Axis,
                     Quad,
-                    Color,
                 },
                 EditorRenderContext,
             },
@@ -64,7 +63,7 @@ impl Gridline {
                             endpoints_clip.max + corner_fix,
                         ],
                     ]),
-                    Color::BLACK,
+                    utils::Color::BLACK,
                 )
             }
             Axis::Y => {
@@ -87,7 +86,7 @@ impl Gridline {
                         ],
                         [y_clip - weight / 2.0, y_clip + weight / 2.0],
                     ]),
-                    Color::BLACK,
+                    utils::Color::BLACK,
                 )
             }
         }
@@ -190,7 +189,7 @@ pub fn render(
     let mut geom = vec![];
     geom.push(Quad::from_bb(
         utils::bounds2d([[-1.0, 1.0], [-1.0, 1.0]]),
-        Color::WHITE,
+        utils::Color::WHITE,
     ));
 
     // Calculate grid LoD level based on camera zoom

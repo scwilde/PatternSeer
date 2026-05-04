@@ -1,6 +1,6 @@
 use crate::app::forms::FormTSM;
 use crate::app::pattern_creation_form::PatternFormEvent;
-use crate::pattern::{pattern_file, PatternDraft};
+use crate::pattern::{io, PatternDraft};
 use crate::{app::menubar::MenubarEvent, pattern::Pattern};
 use crate::app::editor::{Editor, EditorCommand};
 use eframe::egui;
@@ -10,6 +10,7 @@ mod menubar;
 mod editor;
 pub mod forms;
 mod pattern_creation_form;
+
 
 /// An instance of the application.
 pub struct PatternSeer {
@@ -50,7 +51,7 @@ impl eframe::App for PatternSeer {
                 self.editor.queue_cmd(EditorCommand::FitToPattern);
             },
             MenubarEvent::OpenPattern(path) => {
-                self.pattern = match pattern_file::load(path.clone()) {
+                self.pattern = match io::load(path.clone()) {
                     Ok(pattern) => {
                         self.editor.queue_cmd(EditorCommand::FitToPattern);
                         Some(pattern)
@@ -64,7 +65,7 @@ impl eframe::App for PatternSeer {
             },
             MenubarEvent::SavePattern => {
                 if let Some(pattern) = &self.pattern && let Some(path) = &pattern.path {
-                    pattern_file::save(&path, &pattern).unwrap_or_else(|e| {
+                    io::save(&path, &pattern).unwrap_or_else(|e| {
                         println!("Issue saving pattern: {}", e);
                     })
                 }
@@ -72,7 +73,7 @@ impl eframe::App for PatternSeer {
             MenubarEvent::SavePatternAs(path) => {
                 if let Some(pattern) = &mut self.pattern {
                     pattern.path = Some(path.clone());
-                    pattern_file::save(&path, &pattern).unwrap_or_else(|e| {
+                    io::save(&path, &pattern).unwrap_or_else(|e| {
                         println!("Issue saving pattern: {}", e);
                     })
                 }

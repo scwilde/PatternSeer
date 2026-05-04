@@ -26,6 +26,7 @@ Palette containing the different stitches used in the pattern.
 - `[stitch_count: u16]`: The number of stitches contained within the palette.
 - `[stitches: N bytes]`:
     - `[stitch_type: u8]`: The type of stitch. Unrecognized stitch types should be loaded as a placeholder type.
+        - 0 = empty
         - 1 = Full cross
         - 2 = Half cross
         - 3 = petite
@@ -43,7 +44,7 @@ Palette containing the different thread colors used in the pattern.
     - `[rgb: 3x u8]`: RGB color value of thread.
 
 ## `PRIM`
-Primary stitch grid. Raster grid where each cell contains a `u16` index into `STCH`. Width and height defined by `width` and `height` fields in header.
+Primary stitch grid. Raster grid where each cell contains a `u16` index into `STCH`. Width and height defined by `width` and `height` fields in header. Grid is stored using row-major order where each row is laid out after the previous.
 
 ## `sCND`
 Secondary stitch grid containing extra non-raster stitch types such as backstitching & knots.

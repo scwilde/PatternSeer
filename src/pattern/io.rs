@@ -9,6 +9,11 @@ use std::{
 use crate::pattern::Pattern;
 
 
+enum ChunkType {
+    
+}
+
+
 /// Writes the header section of a pattern file.
 /// 
 /// # Parameters
@@ -31,6 +36,12 @@ fn write_header<W: io::Write>(writer: &mut W, width: u16, height: u16) -> io::Re
     Ok(())
 }
 
+fn write_stitch_palette() {}
+fn write_color_palette() {}
+fn write_primary_grid() {}
+
+fn write_chunk() {}
+
 /// Saves a pattern to disk.
 /// 
 /// # Parameters
@@ -52,6 +63,7 @@ pub fn save(path: &Path, pattern: &Pattern) -> io::Result<()> {
     writer.flush()?;
     Ok(())
 }
+
 
 /// Reads the header of a pattern file.
 /// 
@@ -96,8 +108,8 @@ fn read_header<R: io::Read>(reader: &mut R) -> io::Result<(u16, u16)> {
 pub fn load(path: PathBuf) -> io::Result<Pattern> {
     let file = File::open(&path)?;
     let mut reader = io::BufReader::new(file);
-    
+
     let (width, height) = read_header(&mut reader)?;
-    
-    Ok(Pattern { width, height, path: Some(path) })
+
+    Ok(Pattern::from_file(width, height, path))
 }
