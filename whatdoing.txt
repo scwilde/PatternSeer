@@ -22,24 +22,35 @@
 --- Current Work: Pattern loading & Rendering ---
 -[] create a test pattern with some cells filled
 -[] Set pattern max size to 4096 x 4096; Double the value when its converted to the real thing
+-[X] data structure changes
+    -[X] PrimaryGrid -> StitchBuffer. This makes it much more clear its a linear collection of stitches
 -[] File I/O changes
-    -[] Add a ChunkType enum with each variant containing the struct it represents
-    -[] Each of these structs impls the FileChunk trait which has the following methods
-        -[] to_bytechunk - produces a Vec<u8> representing the struct as a chunk in a file
-        -[] from_bytechunk - takes a &[u8] representing the struct as a chunk in a file and trys to convert it back into the struct
-    -[] Add chunks implementations
-        -[] Primary grid
-    -[] Add write_chunk
-        -[] Takes in a ChunkType and a writer
-        -[] Writes the appropriate chunk wrapper
-        -[] Writes the chunk representation of the contained struct
-    -[] Add read_chunk
-        -[] Takes in a reader
-        -[] Reads the next FourCC and u32 chunk length
-        -[] Reacts appropriately either
-            -[] Constructing a ChunkType variant (and its internal struct) that corresponds to the FourCC
-            -[] Loading the chunk as an Extra type if needed
+    -[X] Add a ChunkType enum with each variant containing the struct it represents
+    -[X] Each of these structs impls the FileChunk trait which has the following methods
+        -[X] to_bytechunk - produces a Vec<u8> representing the struct as a chunk in a file
+        -[X] from_bytechunk - takes a &[u8] representing the struct as a chunk in a file and trys to convert it back into the struct
+    -[X] Add primary grid chunk implementation
+    -[X] Add write_chunk
+        -[X] Takes in a ChunkType and a writer
+        -[X] Writes the appropriate chunk wrapper
+        -[X] Writes the chunk representation of the contained struct
+    -[X] implement write_chunk in save
+    -[X] Add read_chunk
+        -[X] Takes in a reader
+        -[X] Reads the next FourCC and u32 chunk length
+        -[X] Reacts appropriately either
+            -[X] Constructing a ChunkType variant (and its internal struct) that corresponds to the FourCC
+            -[X] Loading the chunk as an Extra type if needed
             -[] Discarding the chunk if it does not need to be preserved as extra
+    -[X] Implement read_chunk in load
+    -[X] Test both functions with the primary grid
+
+    -[] Add checks to load that returns an error if any of the required chunks are missing
+    -[] Start cleaning stuff up
+
+    -[] Add more chunk implementations
+        -[] Stitch palette
+        -[] Color palette
 -[] Data structure changes
     -[X] Stitch palette
     -[X] Color palette

@@ -1,7 +1,7 @@
 use crate::utils;
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct ThreadColor {
     brand: String,
     brand_code: String,
@@ -9,7 +9,7 @@ struct ThreadColor {
     rgb_color: utils::Color,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ColorPalette {
     colors: Vec<ThreadColor>,
 }
@@ -21,5 +21,5 @@ impl ColorPalette {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ColorPaletteIndex(u16);

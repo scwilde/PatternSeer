@@ -1,9 +1,9 @@
 use std::path::PathBuf;
-use crate::pattern::stitch_palette::{StitchPalette, StitchPaletteIndex};
+use crate::pattern::{stitch_buffer::StitchBuffer, stitch_palette::StitchPalette};
 
 pub mod io;
-mod stitch_palette;
-mod stitch_grid;
+pub mod stitch_palette;
+pub mod stitch_buffer;
 mod color_palette;
 
 /// An incomplete draft form of a new pattern.
@@ -24,15 +24,14 @@ impl PatternDraft {
 }
 
 /// A cross stitch pattern.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Pattern {
     /// Width of the pattern grid.
     pub width: u16,
     /// Height of the pattern grid.
     pub height: u16,
-    /// Path to where the pattern is saved to / loaded from.
-    pub path: Option<PathBuf>,
     pub palette: StitchPalette,
+    pub primary_grid: StitchBuffer,
 }
 impl Pattern {
     /// Takes the draft form of a new pattern and turns it into a proper pattern.
@@ -40,21 +39,21 @@ impl Pattern {
         Self {
             width: draft.width,
             height: draft.height,
-            path: draft.path.clone(),
             palette: StitchPalette::new(),
+            primary_grid: StitchBuffer::with_size(draft.width, draft.height),
         }
     }
 
-    pub fn from_file(
+    pub fn new(
         width: u16,
         height: u16,
-        path: PathBuf,
+        primary_grid: StitchBuffer,
     ) -> Self {
         Self {
             width,
             height,
-            path: Some(path),
             palette: StitchPalette::new(),
+            primary_grid,
         }
     }
 }

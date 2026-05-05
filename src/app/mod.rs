@@ -39,51 +39,53 @@ impl PatternSeer {
 }
 impl eframe::App for PatternSeer {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame){
-        match menubar::show(ui, frame, &mut self.pattern) {
-            // File events
-            MenubarEvent::CreatePattern => {
-                self.pattern_creation_form.transition_with(|state| {
-                    match state {
-                        FormTSM::Closed(inner) => inner.open(PatternDraft::new()).save_state(),
-                        _ => state
-                    }
-                });
-                self.editor.queue_cmd(EditorCommand::FitToPattern);
-            },
-            MenubarEvent::OpenPattern(path) => {
-                self.pattern = match io::load(path.clone()) {
-                    Ok(pattern) => {
-                        self.editor.queue_cmd(EditorCommand::FitToPattern);
-                        Some(pattern)
-                    },
-                    Err(e) => {
-                        //TODO Bad UX
-                        println!("Issue opening '{}': {}", path.display(), e);
-                        None
-                    },
-                }
-            },
-            MenubarEvent::SavePattern => {
-                if let Some(pattern) = &self.pattern && let Some(path) = &pattern.path {
-                    io::save(&path, &pattern).unwrap_or_else(|e| {
-                        println!("Issue saving pattern: {}", e);
-                    })
-                }
-            },
-            MenubarEvent::SavePatternAs(path) => {
-                if let Some(pattern) = &mut self.pattern {
-                    pattern.path = Some(path.clone());
-                    io::save(&path, &pattern).unwrap_or_else(|e| {
-                        println!("Issue saving pattern: {}", e);
-                    })
-                }
-            }
-            MenubarEvent::CloseWindow => ui.send_viewport_cmd(egui::ViewportCommand::Close),
-            // View events
-            MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommand::FitToPattern),
-            // Other events
-            MenubarEvent::DoNothing => {}
-        }
+        // match menubar::show(ui, frame, &mut self.pattern) {
+        //     // File events
+        //     MenubarEvent::CreatePattern => {
+        //         self.pattern_creation_form.transition_with(|state| {
+        //             match state {
+        //                 FormTSM::Closed(inner) => inner.open(PatternDraft::new()).save_state(),
+        //                 _ => state
+        //             }
+        //         });
+        //         self.editor.queue_cmd(EditorCommand::FitToPattern);
+        //     },
+        //     MenubarEvent::OpenPattern(path) => {
+        //         self.pattern = match io::load(path.clone()) {
+        //             Ok(pattern) => {
+        //                 self.editor.queue_cmd(EditorCommand::FitToPattern);
+        //                 Some(pattern)
+        //             },
+        //             Err(e) => {
+        //                 //TODO Bad UX
+        //                 println!("Issue opening '{}': {}", path.display(), e);
+        //                 None
+        //             },
+        //         }
+        //     },
+        //     MenubarEvent::SavePattern => {
+        //         if let Some(pattern) = &self.pattern && let Some(path) = &pattern.path {
+        //             //TODO Bad UX
+        //             io::save(path, &pattern).unwrap_or_else(|e| {
+        //                 println!("Issue saving pattern: {}", e);
+        //             })
+        //         }
+        //     },
+        //     MenubarEvent::SavePatternAs(path) => {
+        //         if let Some(pattern) = &mut self.pattern {
+        //             pattern.path = Some(path.clone());
+        //             //TODO Bad UX
+        //             io::save(&path, &pattern).unwrap_or_else(|e| {
+        //                 println!("Issue saving pattern: {}", e);
+        //             })
+        //         }
+        //     }
+        //     MenubarEvent::CloseWindow => ui.send_viewport_cmd(egui::ViewportCommand::Close),
+        //     // View events
+        //     MenubarEvent::FitToPattern => self.editor.queue_cmd(EditorCommand::FitToPattern),
+        //     // Other events
+        //     MenubarEvent::DoNothing => {}
+        // }
 
         self.pattern_creation_form.transition_with(|state| {
             match state {

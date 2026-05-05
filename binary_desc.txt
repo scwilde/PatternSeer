@@ -4,11 +4,11 @@ v1.0
 The philosophy of this file format is to try and ensure that user-created data is kept as safe as possible as patternseer grows and changes, while maintaining 100% forwards and backwards compatibility if possible.
 
 # Header
-- `[magic: 6x u8]`: `0x00 PsPat`.
-- `[version: 2x u8]`: Major and minor schema version.
-- `[crc32: u32]`: CRC-32 checksum to verify pattern is not corrupted.
-- `[width: u16]`: Width of the pattern grid.
-- `[height: u16]`: height of the pattern grid.
+-[X] `[magic: 6x u8]`: `0x00 PsPat`.
+-[X] `[version: 2x u8]`: Major and minor schema version.
+-[] `[crc32: u32]`: CRC-32 checksum to verify pattern is not corrupted.
+-[X] `[width: u16]`: Width of the pattern grid.
+-[X] `[height: u16]`: height of the pattern grid.
 
 # Chunks
 The following data is arranged in chunks, inspired somewhat by the PNG format.
@@ -25,7 +25,7 @@ Various metadata fields about the pattern. New fields added to metadata should b
 Palette containing the different stitches used in the pattern.
 - `[stitch_count: u16]`: The number of stitches contained within the palette.
 - `[stitches: N bytes]`:
-    - `[stitch_type: u8]`: The type of stitch. Unrecognized stitch types should be loaded as a placeholder type.
+    - `[stitch_type: u8]`: The type of stitch. Unrecognized stitch types should be loaded as 65536 with the stitch type attached as data.
         - 0 = empty
         - 1 = Full cross
         - 2 = Half cross
