@@ -15,9 +15,6 @@
 -[X] Create CommandBuffer struct
 -[] Add a pattern properties panel on the side to allow resizing of pattern, renaming, changing designer, etc.
 
---- House Keeping ---
--[X] Update Documentation
-
 
 --- Current Work: Pattern loading & Rendering ---
 -[] create a test pattern with some cells filled
@@ -25,38 +22,25 @@
 -[X] data structure changes
     -[X] PrimaryGrid -> StitchBuffer. This makes it much more clear its a linear collection of stitches
 -[] File I/O changes
-    -[X] Add a ChunkType enum with each variant containing the struct it represents
-    -[X] Each of these structs impls the FileChunk trait which has the following methods
-        -[X] to_bytechunk - produces a Vec<u8> representing the struct as a chunk in a file
-        -[X] from_bytechunk - takes a &[u8] representing the struct as a chunk in a file and trys to convert it back into the struct
-    -[X] Add primary grid chunk implementation
-    -[X] Add write_chunk
-        -[X] Takes in a ChunkType and a writer
-        -[X] Writes the appropriate chunk wrapper
-        -[X] Writes the chunk representation of the contained struct
-    -[X] implement write_chunk in save
-    -[X] Add read_chunk
-        -[X] Takes in a reader
-        -[X] Reads the next FourCC and u32 chunk length
-        -[X] Reacts appropriately either
-            -[X] Constructing a ChunkType variant (and its internal struct) that corresponds to the FourCC
-            -[X] Loading the chunk as an Extra type if needed
-            -[] Discarding the chunk if it does not need to be preserved as extra
-    -[X] Implement read_chunk in load
-    -[X] Test both functions with the primary grid
-
-    -[] Add checks to load that returns an error if any of the required chunks are missing
-    -[] Start cleaning stuff up
-
-    -[] Add more chunk implementations
-        -[] Stitch palette
-        -[] Color palette
+    -[] Ditch the chunk iterator; Just loop over the file until we reach the end or we get a truncated chunk
+    -[] Add validation logic that the created StitchBuffer is actually a size that matches the header size
+    
+-[] Fix the UI
+-[] Start cleaning stuff up
+    -[] Create clean APIs
+        -[] pattern
+            -[] Move the actual pattern into its own submodule
+            -[] Expose the io submodule as well as any of the types
+        -[] Decouple things that don't really need to be coupled
+            -[] decouple pattern from the editor camera
+            -[] decouple file selection logic from the UI code; it all lives inside App
 -[] Data structure changes
-    -[X] Stitch palette
+    -[] Stitch palette
+        -[] Make stitch types into an enum with various data attached to them
     -[X] Color palette
-    -[] Primary pattern grid
-        -[] 2d array of u16s
-        -[] Map 2d array to a 1d array
+    -[X] Stitch buffer thats a 2d array of indexes into StitchPalette
+-[] Fix warnings
+-[] Update documentation
 -[] Pattern loading
     -[] First load pattern into memory
     -[] Create a new render pipeline with a buffer big enough to hold the new pattern

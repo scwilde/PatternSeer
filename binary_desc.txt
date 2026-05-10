@@ -43,11 +43,11 @@ Palette containing the different thread colors used in the pattern.
     - `[color_code: 8x u8]`: 8 character ascii code to identify the color of thread within the brand.
     - `[rgb: 3x u8]`: RGB color value of thread.
 
-## `PRIM`
-Primary stitch grid. Raster grid where each cell contains a `u16` index into `STCH`. Width and height defined by `width` and `height` fields in header. Grid is stored using row-major order where each row is laid out after the previous.
+## `RAST`
+Primary stitch grid. Raster grid where each cell contains a little-endian `u16` index into `STCH`. Width and height defined by `width` and `height` fields in header. The grid is stored using row-major order.
 
-## `sCND`
-Secondary stitch grid containing extra non-raster stitch types such as backstitching & knots.
+## `VECT`
+Stitch grid containing extra non-raster stitch types such as backstitching & knots.
 SCHEMA TBD
 
 ## `hiST`

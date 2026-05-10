@@ -382,5 +382,95 @@ mod tests {
         let mut cursor = Cursor::new(garbage);
         let result = read_header(&mut cursor);
 
-    Ok(Pattern::new(width, height, primary_grid.unwrap()))
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), PspatError::BadMagic);
+    }
+    #[test]
+    fn test_read_header_square() {
+        let mut buf: Vec<u8> = vec![];
+
+        buf.extend(b"\x00PsPat");
+        buf.extend_from_slice(&[1u8, 0u8]);
+        let (expected_width, expected_height) = (30u16, 30u16);
+        buf.extend_from_slice(&expected_width.to_le_bytes());
+        buf.extend_from_slice(&expected_height.to_le_bytes());
+
+        let mut cursor = Cursor::new(buf);
+        let (returned_width, returned_height) = read_header(&mut cursor).unwrap();
+
+        assert_eq!(returned_width, expected_width);
+        assert_eq!(returned_height, expected_height);
+    }
+    // TODO test reading non-square headers
+
+    mod chunk_layout {
+        const FOURCC_OFFSET: usize = 0;
+        const FOURCC_STRIDE: usize = 4;
+        pub const FOURCC: super::Range<usize> = FOURCC_OFFSET..(FOURCC_OFFSET + FOURCC_STRIDE);
+
+        const SIZE_OFFSET: usize = 4;
+        const SIZE_STRIDE: usize = 4;
+        pub const SIZE: super::Range<usize> = SIZE_OFFSET..(SIZE_OFFSET + SIZE_STRIDE);
+    }
+    mod chunk_test_data {
+        pub const RAST_GRID_REAL: [u16; 100] = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+            0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 1, 1, 1, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        pub const RAST_GRID_0000: [u16; 100] = [0; 100];
+        pub const RAST_GRID_FFFF: [u16; 100] = [u16::MAX; 100];
+    }
+    #[test]
+    fn test_write_chunk_fourcc_rast() {
+        let expected_fourcc = b"RAST";
+
+        let test_chunk = BorrowedFileChunk::RAST(&StitchBuffer::with_size(0, 0));
+        let mut buf = vec![];
+        write_chunk(&mut buf, test_chunk).unwrap();
+
+        assert_eq!(&buf[chunk_layout::FOURCC], expected_fourcc);
+    }
+    fn assert_written_rast_chunk_size_matches_dimensions(width: u16, height: u16) {
+        let expected_size = ((2 * width * height) as u32).to_le_bytes();
+
+        let test_chunk = BorrowedFileChunk::RAST(&StitchBuffer::with_size(width, height));
+        let mut buf = vec![];
+        write_chunk(&mut buf, test_chunk).unwrap();
+    
+        assert_eq!(&buf[chunk_layout::SIZE], expected_size);
+    }
+    #[test]
+    fn test_write_chunk_size_rast_empty() {
+        assert_written_rast_chunk_size_matches_dimensions(0,0);
+    }
+    #[test]
+    fn test_write_chunk_size_rast_1x1() {
+        assert_written_rast_chunk_size_matches_dimensions(1, 1);
+    }
+    #[test]
+    fn test_write_chunk_size_rast_10x10() {
+        assert_written_rast_chunk_size_matches_dimensions(10, 10);
+    }
+    #[test]
+    fn test_write_chunk_size_rast_20x45() {
+        assert_written_rast_chunk_size_matches_dimensions(20, 45);
+    }
+    #[test]
+    fn test_write_chunk_size_rast_45x20() {
+        assert_written_rast_chunk_size_matches_dimensions(45, 20);
+    }
+    // TODO test writing the data of a grid with all 0x0000
+    // TODO test writing the data of a grid with all 0xFFFF
+    // TODO test writing the data of a grid with real data
+    // TODO test that reading a chunk sandwiched between data consumes only that chunk's data
+    // TODO test that reading a chunk that has less bytes than the envelope states returns an IncompleteChunk error
+    // TODO test reading an empty grid
 }
