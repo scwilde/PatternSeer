@@ -22,7 +22,8 @@
 -[X] data structure changes
     -[X] PrimaryGrid -> StitchBuffer. This makes it much more clear its a linear collection of stitches
 -[] File I/O changes
-    -[] Ditch the chunk iterator; Just loop over the file until we reach the end or we get a truncated chunk
+    -[] Only load the chunk data if the chunk type is one that needs loading (i.e. a known chunk or an unknown but protected chunk)
+    -[X] Ditch the chunk iterator; Just loop over the file until we reach the end or we get a truncated chunk
     -[] Add validation logic that the created StitchBuffer is actually a size that matches the header size
     
 -[] Fix the UI

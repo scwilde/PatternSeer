@@ -73,31 +73,6 @@ impl PartialEq for PspatError {
     }
 }
 
-struct FileChunkIter<R: io::Read> {
-    reader: R,
-}
-impl<R: io::Read> FileChunkIter<R> {
-    pub fn new(reader: R) -> Self {
-        Self { reader }
-    }
-}
-impl<R: io::Read> Iterator for FileChunkIter<R> {
-    type Item = Result<OwnedFileChunk, PspatError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let next_chunk = read_chunk(&mut self.reader);
-
-        if next_chunk.is_ok() {
-            Some(next_chunk)
-        } else {
-            match next_chunk.as_ref().unwrap_err() {
-                PspatError::IncompleteChunk => None,
-                _ => Some(next_chunk)
-            }
-        }
-    }
-}
-
 #[derive(Debug)]
 enum BorrowedFileChunk<'a> {
     RAST(&'a StitchBuffer),
@@ -310,10 +285,12 @@ pub fn load(path: &Path) -> Result<Pattern, PspatError> {
     let (width, height) = read_header(&mut reader)?;
     let mut loaded_pattern = PatternLoader::new(width, height);
 
-    for chunk in FileChunkIter::new(reader) {
-        match chunk? {
-            OwnedFileChunk::RAST(raster_layer) => loaded_pattern.set_raster_layer(raster_layer),
-            OwnedFileChunk::XTRA { .. } => {},
+    loop {
+        match read_chunk(&mut reader) {
+            Ok(OwnedFileChunk::RAST(raster_layer)) => loaded_pattern.set_raster_layer(raster_layer),
+            Ok(OwnedFileChunk::XTRA { .. }) => todo!(),
+            Err(PspatError::IncompleteChunk) => break,
+            Err(e) => return Err(e),
         }
     }
     loaded_pattern.build()
@@ -467,10 +444,16 @@ mod tests {
     fn test_write_chunk_size_rast_45x20() {
         assert_written_rast_chunk_size_matches_dimensions(45, 20);
     }
-    // TODO test writing the data of a grid with all 0x0000
-    // TODO test writing the data of a grid with all 0xFFFF
-    // TODO test writing the data of a grid with real data
+    // TODO test writing the data of a RAST chunk with all 0x0000
+    // TODO test writing the data of a RAST chunk with all 0xFFFF
+    // TODO test writing the data of a RAST chunk with real data
     // TODO test that reading a chunk sandwiched between data consumes only that chunk's data
-    // TODO test that reading a chunk that has less bytes than the envelope states returns an IncompleteChunk error
-    // TODO test reading an empty grid
+    // TODO test that reading a chunk that has less bytes than the envelope states returns an TruncatedChunk error
+    // TODO test that reading a RAST chunk with an uneven number of bytes returns a MalformedChunk error
+    // TODO test that reading an empty RAST chunk returns a stitch buffer with 0 items
+    // TODO test that reading a 1x1 RAST chunk returns a stitch buffer with 1 item
+    // TODO test that reading a 10x10 RAST chunk returns a stitch buffer with 100 items
+    // TODO test reading the data of a RAST chunk with all 0x0000
+    // TODO test reading the data of a RAST chunk with all 0xFFFF
+    // TODO test reading the data of a RAST chunk with real data
 }
