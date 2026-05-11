@@ -22,9 +22,17 @@
 -[X] data structure changes
     -[X] PrimaryGrid -> StitchBuffer. This makes it much more clear its a linear collection of stitches
 -[] File I/O changes
-    -[] Only load the chunk data if the chunk type is one that needs loading (i.e. a known chunk or an unknown but protected chunk)
+    -[X] Only load the chunk data if the chunk type is one that needs loading (i.e. a known chunk or an unknown but protected chunk)
     -[X] Ditch the chunk iterator; Just loop over the file until we reach the end or we get a truncated chunk
+    -[X] Handle EOF properly
+        -[X] UnexpectedEOF while reading a fourcc means a clean end of file and None should be returned; a partial fourcc should just be silently discarded
+                A deliberate design descision needs to be made on whether the presence of a partial fourcc is cause for a malformed file, and if it is not cause for a malformed file then a descision needs to be made on whether the entire wrapper, both fourcc and chunk length, should be silently discarded. It is almost definite though that a complete chunk wrapper but an incomplete chunk body means malformed data.
+        -[X] UnexpectedEOF while reading the chunk length signifies malformed data if it is a known chunk
+        -[X] UnexpectedEOF while reading the chunk body signifies malformed data
+    -[] Write most of the read_chunk() tests
+    -[] write a few load() tests?
     -[] Add validation logic that the created StitchBuffer is actually a size that matches the header size
+    -[] finish tests?
     
 -[] Fix the UI
 -[] Start cleaning stuff up

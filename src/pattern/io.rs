@@ -42,7 +42,8 @@ pub enum PspatError {
     MissingRequiredChunks(Box<[FourCC]>),
     OsReadError(io::Error),
     OsWriteError(io::Error),
-    IncompleteChunk,
+    TruncatedChunk,
+    MalformedChunk(String),
 }
 impl Display for PspatError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -57,7 +58,8 @@ impl Display for PspatError {
             },
             Self::OsReadError(e) => write!(f, "there was an OS-level error while reading the file: {}", e),
             Self::OsWriteError(e) => write!(f, "there was an OS-level error while writing the file: {}", e),
-            Self::IncompleteChunk => write!(f, "found EOF before all of the chunk's stated bytes were loaded"),
+            Self::TruncatedChunk => write!(f, "found EOF before all of the chunk's stated bytes were loaded"),
+            Self::MalformedChunk(msg) => write!(f, "malformed chunk: {}", msg),
         }
     }
 }
@@ -240,30 +242,42 @@ fn read_header<R: io::Read>(reader: &mut R) -> Result<(u16, u16), PspatError> {
     Ok((u16::from_le_bytes(width_bytes), u16::from_le_bytes(height_bytes)))
 }
 
-fn read_chunk<R: io::Read>(reader: &mut R) -> Result<OwnedFileChunk, PspatError> {
+fn read_chunk<R: io::Read>(reader: &mut R) -> Result<Option<OwnedFileChunk>, PspatError> {
+    // ! A deliberate design descision needs to be made about whether an incomplete fourcc should be discarded or considered malformed
     let mut fourcc = [0u8; 4];
-    reader.read_exact(&mut fourcc)
-        .map_err(|e| PspatError::OsReadError(e))?;
+    match reader.read_exact(&mut fourcc) {
+        Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => return Ok(None),
+        Err(e) => return Err(PspatError::OsReadError(e)),
+        Ok(_) => {},
+    }
     let fourcc = FourCC::from_le_bytes(&fourcc);
 
+    // ! A deliberate design descision needs to be made about whether an incomplete chunk length should be considered malformed
     let mut chunk_len = [0u8; 4];
-    reader.read_exact(&mut chunk_len)
-        .map_err(|e| PspatError::OsReadError(e))?;
+    match reader.read_exact(&mut chunk_len) {
+        Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => return Err(PspatError::MalformedChunk(
+            String::from("found an incomplete chunk length field")
+        )),
+        Err(e) => return Err(PspatError::OsReadError(e)),
+        Ok(_) => {}
+    }
     let chunk_len = u32::from_le_bytes(chunk_len);
 
-    let mut chunk_bytes = vec![0u8; chunk_len as usize];
-    reader.read_exact(&mut chunk_bytes).map_err(|e| {
-        match e.kind() {
-            io::ErrorKind::UnexpectedEof => PspatError::IncompleteChunk,
-            _ => PspatError::OsReadError(e),
-        }
-    })?;
-
-    // TODO Check the fourcc first so that an unrecognized chunks that dont need to be stored as XTRA  are not even read
-    Ok(match fourcc.as_le_bytes() {
-        b"RAST" => { OwnedFileChunk::RAST(StitchBuffer::from_le_bytes(&chunk_bytes)) },
-        _ => { OwnedFileChunk::XTRA { original_type: fourcc, original_bytes: chunk_bytes.into() } },
-    })
+    match fourcc.as_le_bytes() {
+        b"RAST" => {
+            if chunk_len % 2 != 0 { return Err(PspatError::MalformedChunk(
+                String::from("uneven number of bytes in RAST chunk body cannot be cleanly deserialized")
+            )) }
+            
+            let mut chunk_bytes = vec![0u8; chunk_len as usize];
+            match reader.read_exact(&mut chunk_bytes) {
+                Ok(_) => Ok(Some(OwnedFileChunk::RAST(StitchBuffer::from_le_bytes(&chunk_bytes)))),
+                Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => Err(PspatError::TruncatedChunk),
+                Err(e) => Err(PspatError::OsReadError(e)),
+            }
+        },
+        _ => todo!(),
+    }
 }
 
 /// Loads a pattern from disk.
@@ -285,14 +299,13 @@ pub fn load(path: &Path) -> Result<Pattern, PspatError> {
     let (width, height) = read_header(&mut reader)?;
     let mut loaded_pattern = PatternLoader::new(width, height);
 
-    loop {
-        match read_chunk(&mut reader) {
-            Ok(OwnedFileChunk::RAST(raster_layer)) => loaded_pattern.set_raster_layer(raster_layer),
-            Ok(OwnedFileChunk::XTRA { .. }) => todo!(),
-            Err(PspatError::IncompleteChunk) => break,
-            Err(e) => return Err(e),
+    while let Some(chunk) = read_chunk(&mut reader)? {
+        match chunk {
+            OwnedFileChunk::RAST(raster_layer) => loaded_pattern.set_raster_layer(raster_layer),
+            OwnedFileChunk::XTRA { .. } => todo!(),
         }
     }
+
     loaded_pattern.build()
 }
 
@@ -448,7 +461,10 @@ mod tests {
     // TODO test writing the data of a RAST chunk with all 0xFFFF
     // TODO test writing the data of a RAST chunk with real data
     // TODO test that reading a chunk sandwiched between data consumes only that chunk's data
-    // TODO test that reading a chunk that has less bytes than the envelope states returns an TruncatedChunk error
+    // TODO test that reading a 0-length fourcc returns none
+    // TODO test that reading an incomplete fourcc returns none
+    // TODO test that reading an incomplete chunk_len field returns a MalformedChunk error
+    // TODO test that reading a chunk that has less bytes than the envelope states returns a MalformedChunk error
     // TODO test that reading a RAST chunk with an uneven number of bytes returns a MalformedChunk error
     // TODO test that reading an empty RAST chunk returns a stitch buffer with 0 items
     // TODO test that reading a 1x1 RAST chunk returns a stitch buffer with 1 item
