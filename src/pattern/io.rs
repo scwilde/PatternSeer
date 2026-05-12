@@ -65,25 +65,34 @@ impl Display for PspatError {
 }
 impl PartialEq for PspatError {
     fn eq(&self, other: &Self) -> bool {
+        // TODO make this into a macro
         match (self, other) {
             (Self::BadMagic, Self::BadMagic) => true,
             (Self::MissingRequiredChunks(a), Self::MissingRequiredChunks(b)) => a == b,
             (Self::OsReadError(a), Self::OsReadError(b)) => a.kind() == b.kind(),
             (Self::OsWriteError(a), Self::OsWriteError(b)) => a.kind() == b.kind(),
-            _ => false
+            (Self::MalformedChunk(_), Self::MalformedChunk(_)) => true,
+            (Self::TruncatedChunk, Self::TruncatedChunk) => true,
+            (Self::BadMagic, _) => false,
+            (Self::MissingRequiredChunks(_), _) => false,
+            (Self::OsReadError(_), _) => false,
+            (Self::OsWriteError(_), _) => false,
+            (Self::MalformedChunk(_), _) => false,
+            (Self::TruncatedChunk, _) => false,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum BorrowedFileChunk<'a> {
     RAST(&'a StitchBuffer),
     XTRA { original_type: &'a FourCC, original_bytes: &'a [u8] },
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum OwnedFileChunk  {
     RAST(StitchBuffer),
     XTRA { original_type: FourCC, original_bytes: Box<[u8]> },
+    Discard,
 }
 
 struct PatternLoader {
@@ -303,6 +312,7 @@ pub fn load(path: &Path) -> Result<Pattern, PspatError> {
         match chunk {
             OwnedFileChunk::RAST(raster_layer) => loaded_pattern.set_raster_layer(raster_layer),
             OwnedFileChunk::XTRA { .. } => todo!(),
+            OwnedFileChunk::Discard => todo!(),
         }
     }
 
@@ -316,7 +326,9 @@ mod tests {
     use std::io::Cursor;
     use std::ops::Range;
     
-    use super::*;
+    use crate::pattern::stitch_buffer;
+
+use super::*;
 
     mod header_layout {
         const MAGIC_OFFSET: usize = 0;
@@ -418,8 +430,41 @@ mod tests {
         pub const RAST_GRID_0000: [u16; 100] = [0; 100];
         pub const RAST_GRID_FFFF: [u16; 100] = [u16::MAX; 100];
     }
+    mod chunk_test_helpers {
+        use super::*;
+
+        pub fn unwrap_rast(chunk: Result<Option<OwnedFileChunk>, PspatError>) -> StitchBuffer {
+            match chunk.unwrap().unwrap() {
+                OwnedFileChunk::RAST(stitch_buffer) => stitch_buffer,
+                other => panic!("expected RAST chunk, got {:?}", other),
+            }
+        }
+
+        pub fn assert_written_rast_chunk_size_matches_dimensions(width: u16, height: u16) {
+            let expected_size = ((2 * width * height) as u32).to_le_bytes();
+    
+            let test_chunk = BorrowedFileChunk::RAST(&StitchBuffer::with_size(width, height));
+            let mut buf = vec![];
+            write_chunk(&mut buf, test_chunk).unwrap();
+        
+            assert_eq!(&buf[chunk_layout::SIZE], expected_size);
+        }
+
+        pub fn assert_read_stitch_buffer_matches_length(expected_len: u32) {
+            let mut buf = vec![];
+            buf.extend(b"RAST");
+            buf.extend((expected_len * 2).to_le_bytes());
+            buf.extend(vec![0u8; (expected_len * 2) as usize]);
+            let mut cursor = Cursor::new(buf);
+        
+            let stitch_buffer = unwrap_rast(read_chunk(&mut cursor));
+        
+            assert_eq!(stitch_buffer.len(), expected_len as usize);
+        }
+
+    }
     #[test]
-    fn test_write_chunk_fourcc_rast() {
+    fn test_write_chunk_rast_fourcc() {
         let expected_fourcc = b"RAST";
 
         let test_chunk = BorrowedFileChunk::RAST(&StitchBuffer::with_size(0, 0));
@@ -428,47 +473,113 @@ mod tests {
 
         assert_eq!(&buf[chunk_layout::FOURCC], expected_fourcc);
     }
-    fn assert_written_rast_chunk_size_matches_dimensions(width: u16, height: u16) {
-        let expected_size = ((2 * width * height) as u32).to_le_bytes();
-
-        let test_chunk = BorrowedFileChunk::RAST(&StitchBuffer::with_size(width, height));
-        let mut buf = vec![];
-        write_chunk(&mut buf, test_chunk).unwrap();
-    
-        assert_eq!(&buf[chunk_layout::SIZE], expected_size);
+    #[test]
+    fn test_write_chunk_rast_size_empty() {
+        chunk_test_helpers::assert_written_rast_chunk_size_matches_dimensions(0,0);
     }
     #[test]
-    fn test_write_chunk_size_rast_empty() {
-        assert_written_rast_chunk_size_matches_dimensions(0,0);
+    fn test_write_chunk_rast_size_1x1() {
+        chunk_test_helpers::assert_written_rast_chunk_size_matches_dimensions(1, 1);
     }
     #[test]
-    fn test_write_chunk_size_rast_1x1() {
-        assert_written_rast_chunk_size_matches_dimensions(1, 1);
+    fn test_write_chunk_rast_size_10x10() {
+        chunk_test_helpers::assert_written_rast_chunk_size_matches_dimensions(10, 10);
     }
     #[test]
-    fn test_write_chunk_size_rast_10x10() {
-        assert_written_rast_chunk_size_matches_dimensions(10, 10);
+    fn test_write_chunk_rast_size_20x45() {
+        chunk_test_helpers::assert_written_rast_chunk_size_matches_dimensions(20, 45);
     }
     #[test]
-    fn test_write_chunk_size_rast_20x45() {
-        assert_written_rast_chunk_size_matches_dimensions(20, 45);
-    }
-    #[test]
-    fn test_write_chunk_size_rast_45x20() {
-        assert_written_rast_chunk_size_matches_dimensions(45, 20);
+    fn test_write_chunk_rast_size_45x20() {
+        chunk_test_helpers::assert_written_rast_chunk_size_matches_dimensions(45, 20);
     }
     // TODO test writing the data of a RAST chunk with all 0x0000
     // TODO test writing the data of a RAST chunk with all 0xFFFF
     // TODO test writing the data of a RAST chunk with real data
-    // TODO test that reading a chunk sandwiched between data consumes only that chunk's data
-    // TODO test that reading a 0-length fourcc returns none
-    // TODO test that reading an incomplete fourcc returns none
-    // TODO test that reading an incomplete chunk_len field returns a MalformedChunk error
-    // TODO test that reading a chunk that has less bytes than the envelope states returns a MalformedChunk error
-    // TODO test that reading a RAST chunk with an uneven number of bytes returns a MalformedChunk error
-    // TODO test that reading an empty RAST chunk returns a stitch buffer with 0 items
-    // TODO test that reading a 1x1 RAST chunk returns a stitch buffer with 1 item
-    // TODO test that reading a 10x10 RAST chunk returns a stitch buffer with 100 items
+    #[test]
+    fn test_read_chunk_overread() {
+        let mut buf = vec![];
+        buf.extend([0u8; 50]);
+        buf.extend(b"RAST");
+        buf.extend(42u32.to_le_bytes());
+        buf.extend([0u8; 42]);
+        buf.extend([0u8; 50]);
+        let start_position = 50;
+        let expected_end_position = 100;
+
+        let mut cursor = Cursor::new(buf);
+        cursor.set_position(start_position);
+        let _ = read_chunk(&mut cursor).unwrap();
+
+        assert_eq!(cursor.position(), expected_end_position);
+    }
+    #[test]
+    fn test_read_chunk_no_fourcc() {
+        let mut cursor = Cursor::new(vec![]);
+
+        let result = read_chunk(&mut cursor).unwrap();
+
+        assert!(result.is_none());
+    }
+    #[test]
+    fn test_read_chunk_truncated_fourcc() {
+        let buf = b"PAT".to_vec();
+        let mut cursor = Cursor::new(buf);
+
+        let result = read_chunk(&mut cursor).unwrap();
+
+        assert!(result.is_none());
+    }
+    #[test]
+    fn test_read_chunk_truncated_chunklen() {
+        let mut buf = vec![];
+        buf.extend(b"RAST");
+        buf.extend(b"\x2D\x00\x00");
+        let mut cursor = Cursor::new(buf);
+
+        let result = read_chunk(&mut cursor);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), PspatError::MalformedChunk(String::from("")));
+    }
+    #[test]
+    fn test_read_chunk_truncated_body_of_known_chunk() {
+        let mut buf = vec![];
+        buf.extend(b"RAST");
+        buf.extend(68u32.to_le_bytes());
+        buf.extend([0u8; 42]);
+        let mut cursor = Cursor::new(buf);
+
+        let result = read_chunk(&mut cursor);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), PspatError::TruncatedChunk);
+    }
+    #[test]
+    fn test_read_chunk_rast_uneven_chunklen() {
+        let mut buf = vec![];
+        buf.extend(b"RAST");
+        buf.extend(69u32.to_le_bytes());
+        buf.extend([0u8; 69]);
+        let mut cursor = Cursor::new(buf);
+
+        let result = read_chunk(&mut cursor);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), PspatError::MalformedChunk(String::from("")));
+    }
+    #[test]
+    fn test_read_chunk_rast_empty() {
+        chunk_test_helpers::assert_read_stitch_buffer_matches_length(0);
+    }
+    #[test]
+    fn test_read_chunk_rast_1x() {
+        chunk_test_helpers::assert_read_stitch_buffer_matches_length(1);
+    }
+    #[test]
+    fn test_read_chunk_rast_100x() {
+        chunk_test_helpers::assert_read_stitch_buffer_matches_length(100);
+    }
     // TODO test reading the data of a RAST chunk with all 0x0000
     // TODO test reading the data of a RAST chunk with all 0xFFFF
     // TODO test reading the data of a RAST chunk with real data

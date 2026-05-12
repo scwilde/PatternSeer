@@ -13,6 +13,10 @@ impl StitchBuffer {
     pub fn get_mut(&mut self, index: usize) -> Option<&mut StitchPaletteIndex> {
         self.0.get_mut(index)
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 impl BinaryChunk for StitchBuffer {
     fn to_le_bytes(&self) -> Box<[u8]> {
