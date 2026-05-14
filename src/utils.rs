@@ -70,6 +70,7 @@ where
 ///     y: [min, max],
 /// ]
 /// ```
+// ! This function will produce undefined behavior if min > max
 pub fn bounds2d<T>(bb: [[T; 2]; 2]) -> Bounds2d<T>
 where
     T: PartialOrd + Clone + Copy,

@@ -29,10 +29,10 @@
                 A deliberate design descision needs to be made on whether the presence of a partial fourcc is cause for a malformed file, and if it is not cause for a malformed file then a descision needs to be made on whether the entire wrapper, both fourcc and chunk length, should be silently discarded. It is almost definite though that a complete chunk wrapper but an incomplete chunk body means malformed data.
         -[X] UnexpectedEOF while reading the chunk length signifies malformed data if it is a known chunk
         -[X] UnexpectedEOF while reading the chunk body signifies malformed data
-    -[] Write most of the read_chunk() tests
-    -[] write a few load() tests?
+    -[X] Write most of the read_chunk() tests
+    -[] Add a better way to edit a StitchBuffer so we can test real data
+    -[] finish read_chunk & write_chunk tests
     -[] Add validation logic that the created StitchBuffer is actually a size that matches the header size
-    -[] finish tests?
     
 -[] Fix the UI
 -[] Start cleaning stuff up

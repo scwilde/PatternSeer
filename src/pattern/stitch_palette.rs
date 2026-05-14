@@ -42,6 +42,10 @@ impl StitchPaletteIndex {
         Self(index)
     }
 
+    pub fn swap(&mut self, index: u16) {
+        self.0 = index;
+    }
+
     pub fn to_le_bytes(&self) -> [u8; 2] {
         self.0.to_le_bytes()
     }

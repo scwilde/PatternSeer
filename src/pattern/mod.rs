@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use crate::pattern::{stitch_buffer::StitchBuffer, stitch_palette::StitchPalette};
+use crate::{pattern::{stitch_buffer::StitchBuffer, stitch_palette::StitchPalette}, utils};
 
 pub mod io;
 pub mod stitch_palette;
